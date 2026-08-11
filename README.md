@@ -2,8 +2,7 @@ SonicDE standalone builder
 ==========================
 
 This is a standalone builder for [SonicDE](https://github.com/Sonic-DE/)
-(fork of KDE with full X11 compatibility) that replaces the
-[MPBT](https://github.com/metux/mpbt) workspace with a Python + CMake
+(fork of KDE with full X11 compatibility) with a Python + CMake
 superbuild pipeline.
 
 Warning: it's still an early work-in-progress.
@@ -41,9 +40,9 @@ configuration:
 --------------
 
 The `config/sonicde/` tree is imported from the SonicDE meta-build
-workspace. The solution file (`solutions/sonicde.yaml`) defines the
+workspace. The solution file (`config/sonicde/solutions/sonicde.yaml`) defines the
 build list, install prefix, environment, and fetch refspecs. Package
-manifests under `packages/` define Git sources, dependencies, and
+manifests under `config/sonicde/packages/` define Git sources, dependencies, and
 build systems.
 
 Only CMake and no-build packages are supported. System packages are
