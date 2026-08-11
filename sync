@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: CC0-1.0
-# autopick - run upstream sync autopick for all managed repos
+# sync - Sync upstream to origin PR for all managed repos.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"

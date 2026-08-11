@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: CC0-1.0
-"""Test autopick-success-cleanup against local Git repositories.
+"""Test sync-success-cleanup against local Git repositories.
 
 No remote GitHub repositories are contacted. The real
-autopick-success-cleanup script is run against a fixture project root
+sync-success-cleanup script is run against a fixture project root
 whose config.py/repositories.py are stubbed so only the per-repo reset
 logic is exercised.
 
@@ -23,7 +23,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
-SCRIPT = ROOT / "autopick-success-cleanup"
+SCRIPT = ROOT / "sync-success-cleanup"
 
 
 def git(cwd, *args, check=True):
@@ -83,11 +83,11 @@ class SuccessCleanupTestBase(unittest.TestCase):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.root = Path(self.tmpdir.name)
 
-        # Fixture project root: stub scripts + real autopick-success-cleanup
+        # Fixture project root: stub scripts + real sync-success-cleanup
         write_stub_config(self.root / "scripts" / "config.py")
         write_stub_repositories(self.root / "scripts" / "repositories.py",
                                 self.REPO)
-        dst_script = self.root / "autopick-success-cleanup"
+        dst_script = self.root / "sync-success-cleanup"
         shutil.copy(SCRIPT, dst_script)
         dst_script.chmod(0o755)
 
@@ -114,7 +114,7 @@ class SuccessCleanupTestBase(unittest.TestCase):
         git(self.checkout, "config", "user.name", "Test")
 
     def _run_script(self):
-        return subprocess.run([str(self.root / "autopick-success-cleanup")],
+        return subprocess.run([str(self.root / "sync-success-cleanup")],
                               cwd=str(self.root),
                               capture_output=True, text=True)
 

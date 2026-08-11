@@ -14,9 +14,9 @@ howto:
 * just fetch git repos: `./fetch-all`
 * full build: `./build-all`
 * create dependency graph: `./generate-depgraph`
-* run upstream sync (autopick): `./autopick`
-* reset repos after merged PRs: `./autopick-success-cleanup`
-* cleanup failed autopick runs: `./autopick-fail-cleanup --force`
+* run upstream sync (autopick): `./sync`
+* reset repos after merged PRs: `./sync-success-cleanup`
+* cleanup failed autopick runs: `./sync-fail-cleanup --force`
 * reset trackers (recovery): `./reset-trackers --yes`
 * check for missing GitHub repos: `./check-new-repos`
 * list OS packages to install: `./install-deps`

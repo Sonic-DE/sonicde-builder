@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: CC0-1.0
-# autopick-fail-cleanup - destructive recovery for failed autopick runs.
+# sync-fail-cleanup - Destructive recovery for failed sync runs.
 # Requires --force. Closes PRs, deletes sync branches, aborts in-progress
 # rebase/merge. Does NOT reset to origin/master.
 set -euo pipefail
@@ -14,7 +14,7 @@ for arg in "$@"; do
 done
 
 if [ "$FORCE" != "true" ]; then
-    echo "autopick-fail-cleanup is destructive. Use --force to proceed." >&2
+    echo "sync-fail-cleanup is destructive. Use --force to proceed." >&2
     exit 1
 fi
 
