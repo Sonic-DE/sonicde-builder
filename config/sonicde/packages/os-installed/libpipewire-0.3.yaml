@@ -1,0 +1,7 @@
+provides: sys/libpipewire-0.3
+type: system
+pkg-config: libpipewire-0.3
+
+platform-packages:
+    debian: libpipewire-0.3-dev
+    devuan: libpipewire-0.3-dev

@@ -1,0 +1,15 @@
+sources:
+    git:
+        url:    https://github.com/danvratil/qcoro.git
+        ref:    ${ref}
+        depth:  1
+        fetch:
+          - refs/tags/${ref}:refs/tags/${ref}
+
+ref:  v0.13.0
+
+buildsystem: cmake
+
+cmake-extra-args:
+    - -DBUILD_TESTING=OFF
+    - -DBUILD_SHARED_LIBS=ON

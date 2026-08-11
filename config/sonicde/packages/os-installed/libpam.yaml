@@ -1,0 +1,7 @@
+provides: sys/libpam
+type: system
+pkg-config: pam
+
+platform-packages:
+    debian: libpam-dev
+    devuan: libpam-dev

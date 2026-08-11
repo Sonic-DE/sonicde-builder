@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: CC0-1.0
+# install-deps - install OS packages required by active system packages
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Generate model
+python3 scripts/config.py -root . \
+    -solution config/sonicde/solutions/sonicde.yaml \
+    -out state/model.json \
+    "$@"
+
+# Print platform packages for the current distro
+python3 -c "
+import json, platform, sys
+model = json.load(open('state/model.json'))
+distro = platform.freedesktop_os_release()['ID'] if hasattr(platform, 'freedesktop_os_release') else 'debian'
+pkgs = []
+for name, pkg in sorted(model['packages'].items()):
+    if pkg.get('type') != 'system': continue
+    pp = pkg.get('platform_packages', {})
+    if isinstance(pp, dict):
+        p = pp.get(distro) or pp.get('debian')
+        if p: pkgs.append(p)
+if pkgs:
+    print(' '.join(sorted(set(pkgs))))
+"

@@ -1,0 +1,56 @@
+sources:
+    git:
+        ref: origin/${master_branch}
+        remotes:
+            origin:
+                url: ${sonicde_git}/${@basename}.git
+                depth: ${sonic_depth}
+                fetch: ${@SOLUTION::fetch::origin}
+            upstream:
+                url: ${plasma_git}/plasma-desktop.git
+                depth: ${upstream_depth}
+                fetch: ${@SOLUTION::fetch::upstream}
+        config:
+            autopick.enabled: 'true'
+            autopick.upstream: upstream/Plasma/6.7
+            autopick.master: origin/${master_branch}
+            autopick.tracker: origin/tracking/plasma-6.7
+            advice.detachedHead: 'false'
+            remote.origin.tagOpt: --no-tags
+            remote.upstream.tagOpt: --no-tags
+        local-branch: ${master_branch}
+
+master_branch: master
+
+buildsystem: cmake
+
+depends:
+    - sonicde/sonic-silver
+    - sonicde/sonic-activities-stats
+    - sonicde/sonic-frameworks-addons-downloader
+    - sonicde/sonic-frameworks-auth
+    - sonicde/sonic-frameworks-crash-handler
+    - sonicde/sonic-frameworks-dbus
+    - sonicde/sonic-frameworks-icon-themes
+    - sonicde/sonic-frameworks-io
+    - sonicde/sonic-frameworks-keybind
+    - sonicde/sonic-frameworks-notification-settings
+    - sonicde/sonic-frameworks-notifications
+    - sonicde/sonic-frameworks-runner
+    - sonicde/sonic-frameworks-settings-utils
+    - sonicde/sonic-frameworks-spell-check
+    - sonicde/sonic-frameworks-svg
+    - sonicde/sonic-frameworks-text-codec
+    - sonicde/sonic-frameworks-xml-gui
+    - sonicde/sonic-interface-libraries
+    - sonicde/sonic-plasma5-support-library
+    - sonicde/sonic-screenlocker
+    - sonicde/sonic-win
+    - sonicde/sonic-workspace
+
+build-depends:
+    - sonicde/sonic-frameworks-cmake-modules
+
+cmake-extra-args:
+    - -DBUILD_KCM_TABLET=OFF
+    - -DBUILD_DOC=OFF

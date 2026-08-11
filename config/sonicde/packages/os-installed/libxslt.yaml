@@ -1,0 +1,7 @@
+provides: sys/libxslt
+type: system
+pkg-config: libxslt
+
+platform-packages:
+    debian: libxslt-dev
+    devuan: libxslt-dev

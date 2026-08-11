@@ -1,0 +1,7 @@
+provides: sys/libzxing
+type: system
+pkg-config: zxing
+
+platform-packages:
+    debian: libzxing-dev
+    devuan: libzxing-dev

@@ -1,0 +1,7 @@
+provides: sys/libdrm
+type: system
+pkg-config: libdrm
+
+platform-packages:
+    debian: libdrm-dev
+    devuan: libdrm-dev

@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: CC0-1.0
+# reset-trackers - explicit recovery tool to reset autopick trackers.
+# Uses cherry equivalence to find the last upstream commit shared with master.
+# Falls back to the literal merge base when no patch-equivalent commit exists.
+# Requires explicit confirmation before force-updating.
+set -euo pipefail
+
+CONFIRM=false
+for arg in "$@"; do
+    case "$arg" in
+        --yes|--confirm) CONFIRM=true ;;
+    esac
+done
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Generate model + repo-list
+python3 scripts/config.py -root . \
+    -solution config/sonicde/solutions/sonicde.yaml \
+    -out state/model.json
+python3 scripts/repositories.py -model state/model.json --view repo-list --out repo-list
+
+REPOS=$(cat repo-list)
+
+for i in $REPOS ; do
+    dir="src/sonicde/$i"
+    [ -d "$dir/.git" ] || continue
+    cd "$dir" || continue
+
+    tracker=$(git config autopick.tracker || true)
+    master=$(git config autopick.master || true)
+    upstream=$(git config autopick.upstream || true)
+
+    [ "$tracker" ] || { echo "[$i] no autopick.tracker, skipping"; cd - >/dev/null; continue; }
+    [ "$master" ] || { echo "[$i] no autopick.master, skipping"; cd - >/dev/null; continue; }
+    [ "$upstream" ] || { echo "[$i] no autopick.upstream, skipping"; cd - >/dev/null; continue; }
+
+    tracker_remote=$(echo "$tracker" | cut -d/ -f1)
+    tracker_branch=$(echo "$tracker" | cut -d/ -f2-)
+
+    git fetch --quiet --prune origin 2>/dev/null || true
+    upstream_remote=$(echo "$upstream" | cut -d/ -f1)
+    git fetch --quiet --prune "$upstream_remote" 2>/dev/null || { echo "[$i] failed to fetch $upstream_remote, skipping"; cd - >/dev/null; continue; }
+
+    master_sha=$(git rev-parse "$master" 2>/dev/null) || { echo "[$i] cant resolve master, skipping"; cd - >/dev/null; continue; }
+    upstream_sha=$(git rev-parse "$upstream" 2>/dev/null) || { echo "[$i] cant resolve upstream, skipping"; cd - >/dev/null; continue; }
+    tracker_sha=$(git rev-parse "$tracker" 2>/dev/null) || tracker_sha=""
+
+    # Find the last upstream commit patch-equivalent to a commit in master
+    matched_upstream=$(git log --cherry-mark --right-only \
+        --format='%m %H' "$master_sha"..."$upstream_sha" 2>/dev/null \
+        | awk '$1 == "=" { print $2; exit }')
+
+    # Fall back to the literal merge base when no patch-equivalent commit exists
+    if [ -z "$matched_upstream" ]; then
+        matched_upstream=$(git merge-base "$master_sha" "$upstream_sha" 2>/dev/null)
+        reason="merge-base (no patch-equivalent commit found)"
+    else
+        reason="patch-equivalent commit"
+    fi
+
+    [ "$matched_upstream" ] || { echo "[$i] histories have no shared commit, skipping"; cd - >/dev/null; continue; }
+
+    if [ "$tracker_sha" = "$matched_upstream" ]; then
+        echo "[$i] tracker already at $matched_upstream ($reason), skipping"
+        cd - >/dev/null
+        continue
+    fi
+
+    echo "[$i] setting tracker to $matched_upstream ($reason)"
+    if [ "$CONFIRM" = "true" ]; then
+        git push -q "$tracker_remote" "+${matched_upstream}:refs/heads/${tracker_branch}" || echo "[$i] failed to push tracker"
+    else
+        echo "  (dry run - use --yes to apply)"
+    fi
+
+    cd - >/dev/null
+done
+
+echo ""
+echo "Done."

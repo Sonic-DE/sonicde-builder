@@ -1,0 +1,7 @@
+provides: sys/libssl
+type: system
+pkg-config: libssl
+
+platform-packages:
+    debian: libssl-dev
+    devuan: libssl-dev

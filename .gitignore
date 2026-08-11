@@ -1,0 +1,26 @@
+# Fetched source repositories (independent git checkouts under src/)
+/src/*/
+
+# Generated build output
+/build
+/cmake/
+
+# Generated compatibility artifacts
+/repo-list
+
+# Generated runtime state (model, logs, tracker failure list, test baseline)
+/state/
+
+# Generated dependency graphs
+depgraph.dot
+depgraph.pdf
+depgraph.svg
+
+# Generated Graphify knowledge graph
+/graphify-out/
+
+# Editor / tool caches
+.*.tmp
+.ccls-cache
+.pytest-cache
+__pycache__/

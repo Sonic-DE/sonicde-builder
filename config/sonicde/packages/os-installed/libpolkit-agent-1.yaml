@@ -1,0 +1,7 @@
+provides: sys/libpolkit-agent-1
+type: system
+pkg-config: polkit-agent-1
+
+platform-packages:
+    debian: libpolkit-agent-1-dev
+    devuan: libpolkit-agent-1-dev

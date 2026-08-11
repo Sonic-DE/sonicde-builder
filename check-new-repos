@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: CC0-1.0
+# check-new-repos - compare GitHub org listing against managed repos
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Generate model
+python3 scripts/config.py -root . \
+    -solution config/sonicde/solutions/sonicde.yaml \
+    -out state/model.json \
+    "$@"
+
+# Get managed repo names
+managed=$(python3 scripts/repositories.py -model state/model.json --view org)
+
+# Get GitHub org repos (Sonic-DE)
+if ! command -v gh >/dev/null 2>&1; then
+    echo "gh CLI not found - cannot check GitHub" >&2
+    echo "$managed" > state/expected-repos.txt
+    echo "Expected repos written to state/expected-repos.txt"
+    exit 0
+fi
+
+gh repo list Sonic-DE --limit 500 --json name -q '.[].name' | \
+    sort > state/github-repos.txt 2>/dev/null || true
+
+echo "$managed" | sort > state/expected-repos.txt
+
+echo "=== Missing from GitHub (expected but not found) ==="
+comm -23 state/expected-repos.txt state/github-repos.txt || true
+
+echo "=== Extra on GitHub (not in managed list) ==="
+comm -13 state/expected-repos.txt state/github-repos.txt || true

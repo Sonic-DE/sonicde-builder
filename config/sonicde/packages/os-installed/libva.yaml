@@ -1,0 +1,7 @@
+provides: sys/libva
+type: system
+pkg-config: libva
+
+platform-packages:
+    debian: libva-dev
+    devuan: libva-dev

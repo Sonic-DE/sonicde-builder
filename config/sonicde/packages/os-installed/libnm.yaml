@@ -1,0 +1,7 @@
+provides: sys/libnm
+type: system
+pkg-config: libnm
+
+platform-packages:
+    debian: libnm-dev
+    devuan: libnm-dev

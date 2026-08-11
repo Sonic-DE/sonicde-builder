@@ -1,0 +1,32 @@
+sources:
+    git:
+        ref: origin/${master_branch}
+        remotes:
+            origin:
+                url: ${sonicde_git}/${@basename}.git
+                depth: ${sonic_depth}
+                fetch: ${@SOLUTION::fetch::origin}
+            upstream:
+                url: https://invent.kde.org/qt/pyside/pyside-setup.git
+                depth: ${upstream_depth}
+                fetch: ${@SOLUTION::fetch::upstream}
+        config:
+            autopick.enabled: 'true'
+            autopick.upstream: upstream/dev
+            autopick.master: origin/${master_branch}
+            autopick.tracker: origin/tracking/master
+            advice.detachedHead: 'false'
+            remote.origin.tagOpt: --no-tags
+            remote.upstream.tagOpt: --no-tags
+        local-branch: ${master_branch}
+
+master_branch: master
+
+buildsystem: cmake
+
+cmake-extra-args:
+    - -DDISABLE_PYI=ON
+    - -DClang_DIR=/usr/lib/llvm/21/lib64/cmake/clang
+    - -DLLVM_DIR=/usr/lib/llvm/21/lib64/cmake/llvm
+
+# needs clang-19 installed (devuan)

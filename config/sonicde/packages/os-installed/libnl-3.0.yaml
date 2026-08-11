@@ -1,0 +1,7 @@
+provides: sys/libnl-3.0
+type: system
+pkg-config: libnl-3.0
+
+platform-packages:
+    debian: libnl-3.0-dev
+    devuan: libnl-3.0-dev

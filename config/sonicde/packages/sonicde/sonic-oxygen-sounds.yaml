@@ -1,0 +1,28 @@
+sources:
+    git:
+        ref: origin/${master_branch}
+        remotes:
+            origin:
+                url: ${sonicde_git}/${@basename}.git
+                depth: ${sonic_depth}
+                fetch: ${@SOLUTION::fetch::origin}
+            upstream:
+                url: ${plasma_git}/oxygen-sounds.git
+                depth: ${upstream_depth}
+                fetch: ${@SOLUTION::fetch::upstream}
+        config:
+            autopick.enabled: 'true'
+            autopick.upstream: upstream/Plasma/6.7
+            autopick.master: origin/${master_branch}
+            autopick.tracker: origin/tracking/plasma-6.7
+            advice.detachedHead: 'false'
+            remote.origin.tagOpt: --no-tags
+            remote.upstream.tagOpt: --no-tags
+        local-branch: ${master_branch}
+
+master_branch: master
+
+buildsystem: cmake
+
+build-depends:
+    - sonicde/sonic-frameworks-cmake-modules

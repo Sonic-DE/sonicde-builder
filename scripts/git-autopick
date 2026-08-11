@@ -1,0 +1,317 @@
+#!/bin/bash
+# SPDX-License-Identifier: CC0-1.0
+# git-autopick - ported from sonicde-meta-build with corrected check ordering.
+# The tracker-equality + cherry-mark verification now runs BEFORE the tip
+# patch-id shortcut, preserving the cherry-mark protection while ensuring
+# "already synced" is printed when tracker equals upstream and all tracked
+# changes are represented in master.
+
+set -e
+
+TEMP_BRANCH="pr/sync-with-upstream"
+
+WD=`pwd`
+REPONAME=$(basename "$WD")
+
+die() {
+    echo "[$REPONAME] $*" >&2
+    exit 1
+}
+
+msg() {
+    echo "[$REPONAME] $*" >&2
+}
+
+## load configuration
+AUTOPICK_UPSTREAM=`git config autopick.upstream || true`
+AUTOPICK_MASTER=`  git config autopick.master   || true`
+AUTOPICK_TRACKER=` git config autopick.tracker  || true`
+AUTOPICK_ENABLED=` git config autopick.enabled  || true`
+
+AUTOPICK_UPSTREAM_REMOTE=`echo "$AUTOPICK_UPSTREAM" | cut -d/ -f1`
+AUTOPICK_UPSTREAM_BRANCH=`echo "$AUTOPICK_UPSTREAM" | cut -d/ -f2-`
+AUTOPICK_MASTER_REMOTE=`  echo "$AUTOPICK_MASTER"   | cut -d/ -f1`
+AUTOPICK_MASTER_BRANCH=`  echo "$AUTOPICK_MASTER"   | cut -d/ -f2-`
+AUTOPICK_TRACKER_REMOTE=` echo "$AUTOPICK_TRACKER"  | cut -d/ -f1`
+AUTOPICK_TRACKER_BRANCH=` echo "$AUTOPICK_TRACKER"  | cut -d/ -f2-`
+
+# check whether autopick is enabled for this repo
+if [ "$AUTOPICK_ENABLED" != "true" ]; then
+    exit 0
+fi
+
+[ "$AUTOPICK_UPSTREAM" ] || die "missing autopick.upstream git config"
+[ "$AUTOPICK_MASTER" ] || die "missing autopick.master git config"
+[ "$AUTOPICK_TRACKER" ] || die "missing autopick.tracker git config"
+
+# If a previous run left the index dirty (e.g. rebase conflict), try to auto-resolve .po files.
+git_dir=$(git rev-parse --git-dir)
+while [ -d "$git_dir/rebase-merge" ] || [ -d "$git_dir/rebase-apply" ] || [ -n "$(git diff --name-only --diff-filter=U 2>/dev/null || true)" ]; do
+    unmerged=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
+    if [ -n "$unmerged" ]; then
+        msg "found unmerged files from a previous run; attempting to auto-resolve .po files"
+        resolved=0
+        for f in $unmerged; do
+            status=$(git status --porcelain -- "$f")
+            case "$status" in
+                DU*)
+                    msg "auto-resolving $f (taking deletion, origin deleted it)"
+                    git rm -- "$f" || die "failed to rm $f"
+                    resolved=1
+                    ;;
+                UD*)
+                    msg "not auto-resolving $f (upstream deleted it, but we modified it)"
+                    ;;
+                *)
+                    case "$f" in
+                        po/*|*.po|CMakeLists.txt|*/CMakeLists.txt)
+                            msg "auto-resolving $f (taking upstream)"
+                            git checkout --theirs -- "$f" || die "failed to checkout --theirs $f"
+                            git add -- "$f" || die "failed to add $f"
+                            resolved=1
+                            ;;
+                    esac
+                    ;;
+            esac
+        done
+        if [ $resolved -eq 0 ]; then
+            msg "non-.po conflicts remain; aborting previous rebase/merge"
+            git rebase --abort 2>/dev/null || git merge --abort 2>/dev/null || true
+            die "conflicts remain in: $unmerged"
+        fi
+    fi
+    if [ -d "$git_dir/rebase-merge" ] || [ -d "$git_dir/rebase-apply" ]; then
+        msg "continuing previous rebase"
+        GIT_EDITOR=true git rebase --continue || true
+    else
+        break
+    fi
+done
+
+git fetch --quiet --prune origin
+git fetch --quiet --prune upstream
+
+CURRENT_UPSTREAM=`git rev-parse "$AUTOPICK_UPSTREAM" 2>/dev/null` || die "cant get upstream branch SHA"
+CURRENT_TRACKER=`git rev-parse "$AUTOPICK_TRACKER" 2>/dev/null` || {
+    msg "tracker branch $AUTOPICK_TRACKER missing; seeding it from $AUTOPICK_UPSTREAM"
+    git push -q "$AUTOPICK_TRACKER_REMOTE" "+${CURRENT_UPSTREAM}:refs/heads/${AUTOPICK_TRACKER_BRANCH}" \
+        || die "failed to seed tracker branch $AUTOPICK_TRACKER"
+    exit 0
+}
+CURRENT_MASTER=`git rev-parse "$AUTOPICK_MASTER" 2>/dev/null` || die "cant get our master branch SHA"
+
+# After a successful rebase, advance the tracker to the upstream tip.
+update_tracker() {
+    msg "=== updating tracker branch $AUTOPICK_TRACKER to $CURRENT_UPSTREAM"
+    git push -q "$AUTOPICK_TRACKER_REMOTE" "+${CURRENT_UPSTREAM}:refs/heads/${AUTOPICK_TRACKER_BRANCH}"
+}
+
+# 1. If tracker equals upstream, verify tracked changes are in master via
+#    cherry-mark BEFORE the tip patch-id shortcut.  This preserves the
+#    cherry-mark protection and avoids force-updating a tracker already at
+#    the upstream tip.
+#
+# --cherry-mark marks equivalent commits with '=' and inequivalent with '+'
+# (or '<'/'>' when combined with --left-right/--right-only).  We use format
+# '%m %H' so the mark is first, and grep for '^>' to count inequivalent
+# right-side (tracker/upstream) commits that are not represented in master.
+if [ "$CURRENT_UPSTREAM" == "$CURRENT_TRACKER" ]; then
+    unapplied=$(git log --cherry-mark --right-only --format='%m %H' \
+        "$AUTOPICK_MASTER"..."$CURRENT_TRACKER" 2>/dev/null | grep '^>' | wc -l)
+    if [ "$unapplied" -eq 0 ]; then
+        msg "already synced"
+        exit 0
+    fi
+fi
+
+# 2. Only when tracker is behind upstream: compare master-tip and upstream-tip
+#    patch IDs as a narrow shortcut.
+master_pid=$(git diff "$CURRENT_MASTER^..$CURRENT_MASTER" | git patch-id --stable 2>/dev/null | cut -d' ' -f1)
+upstream_pid=$(git diff "$CURRENT_UPSTREAM^..$CURRENT_UPSTREAM" | git patch-id --stable 2>/dev/null | cut -d' ' -f1)
+if [ -n "$master_pid" ] && [ "$master_pid" = "$upstream_pid" ]; then
+    msg "already synced (master and upstream tips have the same changes)"
+    update_tracker
+    exit 0
+fi
+
+# check the remote temp branch:
+check_work_waiting() {
+    local remote_url
+    remote_url=$(git config --get remote.origin.url | sed 's|.*github.com[:/]||' | sed 's|\.git$||')
+
+    if ! git ls-remote --heads origin "$TEMP_BRANCH" | grep -q .; then
+        return
+    fi
+
+    msg "=== remote $TEMP_BRANCH exists"
+
+    git fetch --quiet origin "$TEMP_BRANCH"
+
+    if command -v gh >/dev/null 2>&1 && [ -n "$remote_url" ]; then
+        if gh pr list --head "$TEMP_BRANCH" --state open --repo "$remote_url" --json number --jq '.[].number' 2>/dev/null | grep -q .; then
+            msg "=== remote $TEMP_BRANCH has an open PR. skipping for now"
+            exit 0
+        fi
+    fi
+
+    local ahead
+    ahead=$(git rev-list --count "$AUTOPICK_MASTER"..origin/"$TEMP_BRANCH" 2>/dev/null || echo 0)
+    if [ "$ahead" -gt 0 ]; then
+        msg "=== creating PR for existing branch $TEMP_BRANCH with $ahead unmerged commits"
+        gh repo set-default "$remote_url"
+        gh pr create -a "@me" \
+            --title "automatic backport" \
+            --body "upstream range (see tracker)" \
+            -B "$AUTOPICK_MASTER_BRANCH" \
+            -H "$TEMP_BRANCH" \
+            --reviewer "Sonic-DE/dev"
+        update_tracker
+        exit 0
+    fi
+
+    msg "=== remote $TEMP_BRANCH has no unmerged commits and no PR, removing stale branch"
+    git push origin --delete "$TEMP_BRANCH" || msg "=== failed to delete $TEMP_BRANCH"
+    return
+}
+
+check_work_waiting
+
+# Verify tracker is an ancestor of upstream before rebasing.
+# If not, stop with diagnostics instead of replaying older history.
+if ! git merge-base --is-ancestor "$CURRENT_TRACKER" "$CURRENT_UPSTREAM" 2>/dev/null; then
+    merge_base=$(git merge-base "$CURRENT_TRACKER" "$CURRENT_UPSTREAM" 2>/dev/null || echo "none")
+    die "tracker $CURRENT_TRACKER is not an ancestor of upstream $CURRENT_UPSTREAM
+  master:   $CURRENT_MASTER
+  tracker:  $CURRENT_TRACKER
+  upstream: $CURRENT_UPSTREAM
+  merge-base: $merge_base
+  Recovery: use reset-trackers to reset the tracker to a shared commit."
+fi
+
+msg "=== creating working branch"
+git checkout -q "$AUTOPICK_MASTER"
+git branch -q -D "$TEMP_BRANCH" || true
+git checkout -q "$AUTOPICK_UPSTREAM" -b "$TEMP_BRANCH"
+
+# rebase, auto-resolving .po file conflicts by taking upstream (theirs)
+# Note: during merge-backend rebase, Git reverses the usual ours/theirs labels.
+do_rebase() {
+    local git_dir
+    git_dir=$(git rev-parse --git-dir)
+    while true; do
+        local unmerged
+        unmerged=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
+        if [ -n "$unmerged" ]; then
+            local resolved=0
+            local f
+                for f in $unmerged; do
+                    status=$(git status --porcelain -- "$f")
+                    case "$status" in
+                        DU*)
+                            msg "auto-resolving $f (taking deletion, origin deleted it)"
+                            git rm -- "$f" || die "failed to rm $f"
+                            resolved=1
+                            ;;
+                        UD*)
+                            msg "not auto-resolving $f (upstream deleted it, but we modified it)"
+                            ;;
+                        *)
+                            case "$f" in
+                                po/*|*.po|CMakeLists.txt|*/CMakeLists.txt)
+                                    msg "auto-resolving $f (taking upstream)"
+                                    git checkout --theirs -- "$f" || die "failed to checkout --theirs $f"
+                                    git add -- "$f" || die "failed to add $f"
+                                    resolved=1
+                                    ;;
+                            esac
+                            ;;
+                    esac
+                done
+            if [ $resolved -eq 0 ]; then
+                die "rebase has non-.po conflicts; please resolve manually: $unmerged"
+            fi
+            remaining_after=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
+            if [ -n "$remaining_after" ]; then
+                die "unmerged files remain after auto-resolve: $remaining_after"
+            fi
+        fi
+
+        local rc=0
+        if [ -d "$git_dir/rebase-merge" ] || [ -d "$git_dir/rebase-apply" ]; then
+            GIT_EDITOR=true git rebase --continue || rc=$?
+        else
+            # Explicit range form: rebase commits reachable from the work
+            # branch (CURRENT_UPSTREAM) but not from the tracker, onto master.
+            git rebase -q --onto "$CURRENT_MASTER" "$CURRENT_TRACKER" "$TEMP_BRANCH" || rc=$?
+        fi
+        if [ $rc -eq 0 ]; then
+            if [ ! -d "$git_dir/rebase-merge" ] && [ ! -d "$git_dir/rebase-apply" ]; then
+                return 0
+            fi
+        else
+            local unmerged_after
+            unmerged_after=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
+            if [ -n "$unmerged_after" ]; then
+                local resolved=0
+                local f
+                for f in $unmerged_after; do
+                    status=$(git status --porcelain -- "$f")
+                    case "$status" in
+                        DU*)
+                            msg "auto-resolving $f (taking deletion, origin deleted it)"
+                            git rm -- "$f" || die "failed to rm $f"
+                            resolved=1
+                            ;;
+                        UD*)
+                            msg "not auto-resolving $f (upstream deleted it, but we modified it)"
+                            ;;
+                        *)
+                            case "$f" in
+                                po/*|*.po|CMakeLists.txt|*/CMakeLists.txt)
+                                    msg "auto-resolving $f (taking upstream)"
+                                    git checkout --theirs -- "$f" || die "failed to checkout --theirs $f"
+                                    git add -- "$f" || die "failed to add $f"
+                                    resolved=1
+                                    ;;
+                            esac
+                            ;;
+                    esac
+                done
+                if [ $resolved -eq 0 ]; then
+                    die "rebase has non-.po conflicts; please resolve manually: $unmerged_after"
+                fi
+                remaining_after=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
+                if [ -n "$remaining_after" ]; then
+                    die "unmerged files remain after auto-resolve: $remaining_after"
+                fi
+            else
+                die "rebase failed"
+            fi
+        fi
+    done
+}
+
+msg "=== rebasing"
+do_rebase
+
+# clean up when there weren't any actual changes to push
+CURRENT_WORK=`git rev-parse HEAD 2>/dev/null` || die "cant get get current HEAD SHA"
+if [ "$CURRENT_WORK" == "$CURRENT_MASTER" ]; then
+    msg ">>> no new changes after rebase"
+    msg ">>> switching back to $AUTOPICK_MASTER and deleting $TEMP_BRANCH"
+    git checkout -q "$AUTOPICK_MASTER"
+    git branch -q -D "$TEMP_BRANCH"
+    update_tracker
+    exit 0
+fi
+
+msg "=== pushing branch $TEMP_BRANCH and creating PR"
+git push $AUTOPICK_MASTER_REMOTE $TEMP_BRANCH
+gh repo set-default "$(git config --get remote.origin.url | sed 's|.*github.com[:/]||' | sed 's|\.git$||')"
+gh pr create -a "@me" \
+    --title "automatic backport" \
+    --body "upstream range $CURRENT_TRACKER..$AUTOPICK_UPSTREAM" \
+    -B "$AUTOPICK_MASTER_BRANCH" \
+    -H "$TEMP_BRANCH" \
+    --reviewer "Sonic-DE/dev"
+update_tracker

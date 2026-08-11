@@ -1,0 +1,19 @@
+sources:
+    git:
+        ref: origin/${master_branch}
+        depth: ${sonic_depth}
+        remotes:
+            origin:
+                url: ${sonicde_git}/${@basename}.git
+                fetch: ${@SOLUTION::fetch::origin}
+        config:
+            advice.detachedHead: 'false'
+            remote.origin.tagOpt: --no-tags
+        local-branch: ${master_branch}
+
+master_branch: master
+
+buildsystem: cmake
+
+build-depends:
+    - sonicde/sonic-frameworks-cmake-modules

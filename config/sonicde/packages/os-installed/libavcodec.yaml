@@ -1,0 +1,7 @@
+provides: sys/libavcodec
+type: system
+pkg-config: libavcodec
+
+platform-packages:
+    debian: libavcodec-dev
+    devuan: libavcodec-dev

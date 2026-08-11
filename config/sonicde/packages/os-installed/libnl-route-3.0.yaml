@@ -1,0 +1,7 @@
+provides: sys/libnl-route-3.0
+type: system
+pkg-config: libnl-route-3.0
+
+platform-packages:
+    debian: libnl-route-3.0
+    devuan: libnl-route-3.0

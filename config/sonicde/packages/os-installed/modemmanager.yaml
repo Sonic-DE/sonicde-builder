@@ -1,0 +1,7 @@
+provides: sys/modemmanager
+type: system
+# pkg-config: libnm
+
+platform-packages:
+    debian: modemmanager-dev
+    devuan: modemmanager-dev

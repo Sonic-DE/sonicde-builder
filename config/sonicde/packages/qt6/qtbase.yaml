@@ -1,0 +1,34 @@
+sources:
+    git:
+        url:    ${qt6_git}/${@basename}.git
+        ref:    ${ref}
+        depth:  1
+        fetch:
+          - refs/tags/${ref}:refs/tags/${ref}
+
+ref: ${qt6_version}
+
+buildsystem: cmake
+
+cmake-extra-args:
+    - -DFEATURE_xcb=ON
+    - -DFEATURE_xkbcommon_x11=ON
+    - -DFEATURE_xkbcommon=ON
+    - -DFEATURE_gui=ON
+    - -DFEATURE_widgets=ON
+#    - -DFEATURE_icu=OFF
+    - -DFEATURE_sql=ON
+    - -DFEATURE_xkbcommon_x11=ON
+    - -DFEATURE_developer_build=ON
+#    - -DFEATURE_private_tests=OFF
+    - -DFEATURE_wayland=OFF
+    - -DFEATURE_linuxfb=OFF
+    - -DFEATURE_directfb=OFF
+    - -DFEATURE_vnc=OFF
+    - -DFEATURE_eglfs=OFF
+    - -DQT_FEATURE_ssl=ON
+    - -DFEATURE_openssl=ON
+    - -DFEATURE_openssl_linked=ON
+
+depends:
+    - sys/libssl

@@ -1,0 +1,7 @@
+provides: sys/libproxy
+type: system
+pkg-config: libproxy-1.0
+
+platform-packages:
+    debian: libproxy-dev
+    devuan: libproxy-dev

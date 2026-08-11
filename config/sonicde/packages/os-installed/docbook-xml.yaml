@@ -1,0 +1,7 @@
+provides: sys/docbook-xsl
+type: system
+# pkg-config: docbook-xsl
+
+platform-packages:
+    debian: docbook-xsl
+    devuan: docbook-xsl

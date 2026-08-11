@@ -1,0 +1,46 @@
+sources:
+    git:
+        ref: origin/${master_branch}
+        remotes:
+            origin:
+                url: ${sonicde_git}/${@basename}.git
+                depth: ${sonic_depth}
+                fetch: ${@SOLUTION::fetch::origin}
+            upstream:
+                url: ${plasma_git}/plasma-workspace.git
+                depth: ${upstream_depth}
+                fetch: ${@SOLUTION::fetch::upstream}
+        config:
+            autopick.enabled: 'true'
+            autopick.upstream: upstream/Plasma/6.7
+            autopick.master: origin/${master_branch}
+            autopick.tracker: origin/tracking/plasma-6.7
+            advice.detachedHead: 'false'
+            remote.origin.tagOpt: --no-tags
+            remote.upstream.tagOpt: --no-tags
+        local-branch: ${master_branch}
+
+master_branch: master
+
+buildsystem: cmake
+
+depends:
+    - sonicde/sonic-silver
+    - 3rdparty/qcoro6
+    - sonicde/sonic-activities-stats
+    - sonicde/sonic-daemon
+    - sonicde/sonic-frameworks-barcode
+    - sonicde/sonic-frameworks-keyring
+    - sonicde/sonic-frameworks-qml-bridge
+    - sonicde/sonic-frameworks-runner
+    - sonicde/sonic-frameworks-text-editor
+    - sonicde/sonic-frameworks-text-widgets
+    - sonicde/sonic-frameworks-ui-components
+    - sonicde/sonic-interface-libraries
+    - sonicde/sonic-polkit
+    - sonicde/sonic-screen
+    - sonicde/sonic-screenlocker
+    - sonicde/sonic-win
+
+build-depends:
+    - sonicde/sonic-frameworks-cmake-modules

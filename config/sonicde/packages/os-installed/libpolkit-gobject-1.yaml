@@ -1,0 +1,7 @@
+provides: sys/libpolkit-gobject-1
+type: system
+pkg-config: polkit-gobject-1
+
+platform-packages:
+    debian: libpolkit-gobject-1-dev
+    devuan: libpolkit-gobject-1-dev

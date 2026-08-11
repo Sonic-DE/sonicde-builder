@@ -1,0 +1,6 @@
+provides: sys/libsensors
+type: system
+
+platform-packages:
+    debian: libsensors-dev
+    devuan: libsensors-dev

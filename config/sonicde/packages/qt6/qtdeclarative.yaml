@@ -1,0 +1,23 @@
+sources:
+    git:
+        url:    ${qt6_git}/${@basename}.git
+        ref:    ${ref}
+        depth:  1
+        fetch:
+          - refs/tags/${ref}:refs/tags/${ref}
+
+ref: ${qt6_version}
+
+buildsystem: cmake
+
+depends:
+    - qt6/qtbase
+    - qt6/qtshadertools
+    - qt6/qtsvg
+
+cmake-extra-args:
+    - -DFEATURE_developer_build=ON
+    - -DQT_FEATURE_developer_build=ON
+# Qt's cmake scripts are broken, assuming wrong pathes leading outside of build tree
+    - -DQT_BUILD_TESTS=OFF
+    - -DQT_BUILD_EXAMPLES=OFF

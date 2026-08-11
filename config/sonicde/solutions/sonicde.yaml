@@ -1,0 +1,201 @@
+#
+# Build all SonicDE packages into $HOME/SONICDE. Qt 6 is supplied by the
+# operating system and is deliberately not fetched or built by this solution.
+#
+# Yet just tested on Devuan Excalibur - other distros might require
+# some additional tweaking.
+
+sonicde_git: git@github.com:Sonic-DE
+xlibre_git: https://github.com/X11Libre
+ossqm_git: git@github.com:oss-qm
+
+kde_git: https://invent.kde.org/
+
+kf6_git: https://invent.kde.org/frameworks/
+kf6_version: v6.27.0
+
+kdelibs_git: https://invent.kde.org/libraries/
+
+kdenet_git: https://invent.kde.org/network/
+
+plasma_git: https://invent.kde.org/plasma/
+plasma_version: v6.7.0
+
+# clone depth of our and upstream packages (those we forked)
+sonic_depth: 0
+upstream_depth: 0
+
+install-prefix: ${@PROJECT::@homedir}/SONICDE
+
+# what to build (can use packages or provides here)
+# just listing all sonic repos alphabetically here
+build:
+    - sonicde/sonic-accounts-integration
+    - sonicde/sonic-activities
+    - sonicde/sonic-activities-stats
+    - sonicde/sonic-activity-manager-daemon
+    - sonicde/sonic-audio-applet-pulse
+    - sonicde/sonic-bluetooth-runtime
+    - sonicde/sonic-breeze
+    - sonicde/sonic-browser-integration
+    - sonicde/sonic-crypto-library
+    - sonicde/sonic-daemon
+    - sonicde/sonic-decoration
+    - sonicde/sonic-desktop-interface
+    - sonicde/sonic-disks
+    - sonicde/sonic-dr-robotnik
+    - sonicde/sonic-drawing-tablet
+    - sonicde/sonic-ecco
+    - sonicde/sonic-exiv2-library
+    - sonicde/sonic-file-search-ui
+    - sonicde/sonic-firewall
+    - sonicde/sonic-frameworks-addons-downloader
+    - sonicde/sonic-frameworks-app-info
+    - sonicde/sonic-frameworks-archive
+    - sonicde/sonic-frameworks-auth
+    - sonicde/sonic-frameworks-autocomplete
+    - sonicde/sonic-frameworks-barcode
+    - sonicde/sonic-frameworks-bluetooth
+    - sonicde/sonic-frameworks-bookmarks
+    - sonicde/sonic-frameworks-color-scheme
+    - sonicde/sonic-frameworks-core-addons
+    - sonicde/sonic-frameworks-crash-handler
+    - sonicde/sonic-frameworks-data-models
+    - sonicde/sonic-frameworks-data-views
+    - sonicde/sonic-frameworks-dbus
+    - sonicde/sonic-frameworks-device-integration
+    - sonicde/sonic-frameworks-feeds
+    - sonicde/sonic-frameworks-file-metadata
+    - sonicde/sonic-frameworks-file-search
+    - sonicde/sonic-frameworks-holidays
+    - sonicde/sonic-frameworks-icon-themes
+    - sonicde/sonic-frameworks-idle-tracker
+    - sonicde/sonic-frameworks-image-formats
+    - sonicde/sonic-frameworks-internationalization
+    - sonicde/sonic-frameworks-io
+    - sonicde/sonic-frameworks-io-extras
+    - sonicde/sonic-frameworks-io-fuse
+    - sonicde/sonic-frameworks-keybind
+    - sonicde/sonic-frameworks-keyring
+    - sonicde/sonic-frameworks-keyring-pam
+    - sonicde/sonic-frameworks-modemmanager
+    - sonicde/sonic-frameworks-networkmanager
+    - sonicde/sonic-frameworks-notification-settings
+    - sonicde/sonic-frameworks-notifications
+    - sonicde/sonic-frameworks-package
+    - sonicde/sonic-frameworks-progress-ui
+    - sonicde/sonic-frameworks-pseudo-terminal
+    - sonicde/sonic-frameworks-purpose
+    - sonicde/sonic-frameworks-qml-bridge
+    - sonicde/sonic-frameworks-qt-integration
+    - sonicde/sonic-frameworks-quick-charts
+    - sonicde/sonic-frameworks-quick-desktop-style
+    - sonicde/sonic-frameworks-quick-silver-style
+    - sonicde/sonic-frameworks-quick-ui
+    - sonicde/sonic-frameworks-quick-ui-addons
+    - sonicde/sonic-frameworks-root-shell
+    - sonicde/sonic-frameworks-runner
+    - sonicde/sonic-frameworks-settings
+    - sonicde/sonic-frameworks-settings-ui
+    - sonicde/sonic-frameworks-settings-utils
+    - sonicde/sonic-frameworks-silver-icons
+    - sonicde/sonic-frameworks-spell-check
+    - sonicde/sonic-frameworks-sso
+    - sonicde/sonic-frameworks-status-notification
+    - sonicde/sonic-frameworks-svg
+    - sonicde/sonic-frameworks-syntax-highlighting
+    - sonicde/sonic-frameworks-text-codec
+    - sonicde/sonic-frameworks-text-editor
+    - sonicde/sonic-frameworks-text-widgets
+    - sonicde/sonic-frameworks-ui-components
+    - sonicde/sonic-frameworks-unit-conversion
+    - sonicde/sonic-frameworks-user-feedback
+    - sonicde/sonic-frameworks-via
+    - sonicde/sonic-frameworks-widgets-addons
+    - sonicde/sonic-frameworks-windowsystem
+    - sonicde/sonic-frameworks-xml-gui
+    - sonicde/sonic-frameworks-zeroconf
+    - sonicde/sonic-gtk-theme-bridge
+    - sonicde/sonic-interface-libraries
+    - sonicde/sonic-keybind-daemon
+    - sonicde/sonic-l10n-templates
+    - sonicde/sonic-launcher-menu-edit
+    - sonicde/sonic-login-manager
+    - sonicde/sonic-mobile-interface
+    - sonicde/sonic-network-manager
+    - sonicde/sonic-oxygen
+    - sonicde/sonic-oxygen-icons
+    - sonicde/sonic-oxygen-sounds
+    - sonicde/sonic-partition-manager
+    - sonicde/sonic-pipewire
+    - sonicde/sonic-plasma5-support-library
+    - sonicde/sonic-polkit
+    - sonicde/sonic-polkit-agent
+    - sonicde/sonic-pyside-setup
+    - sonicde/sonic-pulseaudio-library
+    - sonicde/sonic-qt-accounts-library
+    - sonicde/sonic-qt-theme-bridge
+    - sonicde/sonic-quick-image-editor
+    - sonicde/sonic-screen
+    - sonicde/sonic-screen-library
+    - sonicde/sonic-screenies
+    - sonicde/sonic-screenlocker
+    - sonicde/sonic-silver
+    - sonicde/sonic-silver-gtk
+    - sonicde/sonic-ssh-password-prompt
+    - sonicde/sonic-system-monitor-library
+    - sonicde/sonic-system-info
+    - sonicde/sonic-system-log
+    - sonicde/sonic-system-monitor
+    - sonicde/sonic-system-stats
+    - sonicde/sonic-terminal
+    - sonicde/sonic-terminal-tools
+    - sonicde/sonic-thunderbolt
+    - sonicde/sonic-vault
+    - sonicde/sonic-welcome-center
+    - sonicde/sonic-win
+    - sonicde/sonic-workspace
+    - sonicde/sonic-workspace-addons
+    - sonicde/sonic-workspace-wallpapers
+    - sonicde/sonic-write-daemon
+    - sonicde/xdg-desktop-portal-sonicde
+
+# extra environment variables
+env:
+    PATH: '${install-prefix}/bin:/usr/lib/llvm/21/bin:/bin:/usr/bin'
+    PKG_CONFIG_PATH: ${install-prefix}/share/pkgconfig:${install-prefix}/lib/pkgconfig:${install-prefix}/lib/${@PROJECT::@machine}/pkgconfig/
+    ACLOCAL_PATH: ${install-prefix}/share/aclocal
+    LLVM_INSTALL_DIR: /usr/lib/llvm/21
+    CLANG_INSTALL_DIR: /usr/lib/llvm/21
+
+packages:
+    - ${@PROJECT::@rootdir}/config/sonicde/packages
+
+# these are injected as default values into each individual package
+package-defaults:
+    cmake-args:
+        - -GNinja
+    sonicde_git: ${sonicde_git}
+    xlibre_git: ${xlibre_git}
+    kde_git: ${kde_git}
+    kde_force: true
+    kf6_git: ${kf6_git}
+    kf6_version: ${kf6_version}
+    kf6_force: true
+    kdenet_git: ${kdenet_git}
+    kdelibs_git: ${kdelibs_git}
+    kdelibs_force: true
+    plasma_git: ${plasma_git}
+    plasma_force: true
+    plasma_version: ${plasma_version}
+    ossqm_git: ${ossqm_git}
+    sonic_depth: ${sonic_depth}
+    upstream_depth: ${upstream_depth}
+
+fetch:
+    origin:
+        - refs/heads/*:refs/remotes/origin/*
+        - refs/tags/*:refs/tags/origin/*
+    upstream:
+        - refs/heads/*:refs/remotes/upstream/*
+        - refs/tags/*:refs/tags/upstream/*

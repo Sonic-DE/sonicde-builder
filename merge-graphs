@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: CC0-1.0
+# merge-graphs - combine per-project graphify-out/graph.json files into the
+# root graphify-out/graph.json (a cross-repo graph over all graphified
+# SonicDE sub-projects). graphify's detect() never auto-discovers nested
+# repos under src/, so the root graph is assembled explicitly here.
+#
+# This is a FULL rebuild: graphify merge-graphs composes every input graph
+# from scratch. Re-run after per-project `graphify update .` to keep the
+# root merged graph current.
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+OUT="graphify-out/graph.json"
+
+# nullglob so a missing graph.json doesn't leave a literal pattern in the
+# array (which would make merge-graphs error with "not found").
+shopt -s nullglob
+graphs=( src/sonicde/*/graphify-out/graph.json src/3rdparty/*/graphify-out/graph.json )
+
+if [ ${#graphs[@]} -lt 2 ]; then
+    echo "merge-graphs: need at least 2 per-project graphs, found ${#graphs[@]}." >&2
+    echo "Run 'graphify update .' (or 'graphify extract .') inside at least two" >&2
+    echo "src/<group>/<project>/ checkouts first; each writes graphify-out/graph.json." >&2
+    exit 1
+fi
+
+mkdir -p graphify-out
+graphify merge-graphs "${graphs[@]}" --out "$OUT"
+echo "Merged ${#graphs[@]} per-project graphs -> $OUT"

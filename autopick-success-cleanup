@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: CC0-1.0
+# autopick-success-cleanup - after autopick PRs are merged, reset repos to origin/master
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Generate model + repo-list
+python3 scripts/config.py -root . \
+    -solution config/sonicde/solutions/sonicde.yaml \
+    -out state/model.json \
+    "$@"
+python3 scripts/repositories.py -model state/model.json --view repo-list --out repo-list
+
+REPOS=$(cat repo-list)
+
+for i in $REPOS ; do
+    dir="src/sonicde/$i"
+    [ -d "$dir/.git" ] || continue
+    cd "$dir" || continue
+
+    echo "=== $i : fetching origin, resetting to origin/master, removing sync branches ==="
+
+    # Refuse dirty trees
+    if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+        echo "  WARNING: dirty worktree, skipping reset"
+        cd - >/dev/null
+        continue
+    fi
+
+    git fetch --quiet --prune origin
+
+    # Move the local master branch to origin/master's tip, keeping HEAD
+    # attached to master. Checking out the remote-tracking ref directly
+    # (git checkout origin/master) would leave HEAD detached at the commit
+    # without advancing the local master branch.
+    if ! git checkout -q master 2>/dev/null; then
+        # Local master does not exist; create it tracking origin/master.
+        git checkout -q -b master origin/master 2>/dev/null || true
+    fi
+    git reset --hard origin/master 2>/dev/null || echo "  failed to reset to origin/master"
+
+    # Verify on branch master at origin/master tip (not detached HEAD)
+    master_sha=$(git rev-parse origin/master 2>/dev/null || echo "")
+    head_sha=$(git rev-parse HEAD 2>/dev/null || echo "")
+    on_branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || echo "")
+    if [ "$master_sha" != "$head_sha" ]; then
+        echo "  WARNING: HEAD does not match origin/master after reset"
+    elif [ "$on_branch" != "master" ]; then
+        echo "  WARNING: HEAD is detached, expected on branch 'master'"
+    fi
+
+    # Delete the local sync branch if it exists (already merged remotely)
+    if git show-ref --verify --quiet "refs/heads/pr/sync-with-upstream"; then
+        git branch -D "pr/sync-with-upstream" 2>/dev/null || echo "  failed to delete local branch pr/sync-with-upstream"
+    fi
+
+    cd - >/dev/null
+done
+
+echo ""
+echo "Done. All repos reset to origin/master."

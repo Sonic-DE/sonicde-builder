@@ -1,0 +1,7 @@
+provides: sys/libdmtx
+type: system
+pkg-config: libdmtx
+
+platform-packages:
+    debian: libdmtx-dev
+    devuan: libdmtx-dev

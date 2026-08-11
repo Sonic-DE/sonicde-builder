@@ -1,0 +1,21 @@
+sources:
+    git:
+        url:    ${qt6_git}/${@basename}.git
+        ref:    ${ref}
+        depth:  1
+        fetch:
+          - refs/tags/${ref}:refs/tags/${ref}
+
+ref: ${qt6_version}
+
+buildsystem: cmake
+
+depends:
+    - qt6/qtbase
+    - qt6/qtpositioning
+
+cmake-extra-args:
+    - -DFEATURE_developer_build=ON
+    - -DFEATURE_private=ON
+#    - -DFEATURE_private_tests=OFF
+    - -DFEATURE_positioning_quick=ON

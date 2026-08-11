@@ -1,0 +1,6 @@
+provides: sys/libaspell
+type: system
+
+platform-packages:
+    debian: libaspell-dev
+    devuan: libaspell-dev

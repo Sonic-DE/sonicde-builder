@@ -1,0 +1,7 @@
+provides: sys/docbook-xml
+type: system
+# pkg-config: docbook-xml
+
+platform-packages:
+    debian: docbook-xml
+    devuan: docbook-xml

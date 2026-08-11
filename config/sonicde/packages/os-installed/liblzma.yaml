@@ -1,0 +1,7 @@
+provides: sys/liblzma
+type: system
+pkg-config: liblzma
+
+platform-packages:
+    debian: liblzma-dev
+    devuan: liblzma-dev

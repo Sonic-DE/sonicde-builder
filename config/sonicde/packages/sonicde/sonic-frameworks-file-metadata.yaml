@@ -1,0 +1,37 @@
+sources:
+    git:
+        ref: origin/${master_branch}
+        remotes:
+            origin:
+                url: ${sonicde_git}/${@basename}.git
+                depth: ${sonic_depth}
+                fetch: ${@SOLUTION::fetch::origin}
+            upstream:
+                url: ${kf6_git}/kfilemetadata.git
+                depth: ${upstream_depth}
+                fetch: ${@SOLUTION::fetch::upstream}
+        config:
+            autopick.enabled: 'true'
+            autopick.upstream: upstream/master
+            autopick.master: origin/${master_branch}
+            autopick.tracker: origin/tracking/master
+            advice.detachedHead: 'false'
+            remote.origin.tagOpt: --no-tags
+            remote.upstream.tagOpt: --no-tags
+        local-branch: ${master_branch}
+
+master_branch: master
+
+buildsystem: cmake
+
+build-depends:
+    - sonicde/sonic-frameworks-cmake-modules
+
+depends:
+    - os-installed/libavcodec
+    - os-installed/libavformat
+    - sonicde/sonic-frameworks-archive
+    - sonicde/sonic-frameworks-core-addons
+    - sonicde/sonic-frameworks-internationalization
+    - sonicde/sonic-frameworks-settings
+    - sonicde/sonic-frameworks-text-codec

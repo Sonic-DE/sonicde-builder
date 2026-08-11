@@ -1,0 +1,7 @@
+provides: sys/libpulse
+type: system
+pkg-config: libpulse
+
+platform-packages:
+    debian: libpulse-dev
+    devuan: libpulse-dev

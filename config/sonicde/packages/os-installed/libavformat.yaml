@@ -1,0 +1,7 @@
+provides: sys/libavformat
+type: system
+pkg-config: libavformat
+
+platform-packages:
+    debian: libavformat-dev
+    devuan: libavformat-dev
