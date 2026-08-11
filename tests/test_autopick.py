@@ -14,6 +14,8 @@ import unittest
 from pathlib import Path
 
 SCRIPTS = Path(__file__).parent.parent / "scripts"
+ORIGINAL_AUTOPICK = Path(
+    "/home/joseph/Development/c++/sonicde-meta-build/scripts/git-autopick")
 
 
 def git(cwd, *args, check=True, env=None):
@@ -112,6 +114,17 @@ class AutopickTestBase(unittest.TestCase):
             capture_output=True, text=True)
 
 
+class TestOriginalScriptParity(unittest.TestCase):
+
+    @unittest.skipUnless(ORIGINAL_AUTOPICK.exists(),
+                         "authoritative sonicde-meta-build checkout unavailable")
+    def test_builder_copy_matches_authoritative_original(self):
+        """The port must not silently alter the known-good sync algorithm."""
+        self.assertEqual(
+            (SCRIPTS / "git-autopick").read_bytes(),
+            ORIGINAL_AUTOPICK.read_bytes())
+
+
 class TestAlreadySynced(AutopickTestBase):
 
     def test_tracker_equals_upstream_all_in_master(self):
@@ -121,64 +134,82 @@ class TestAlreadySynced(AutopickTestBase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("already synced", r.stderr)
 
-    def test_tracker_equals_upstream_unapplied_changes(self):
-        """Tracker == upstream but master lacks upstream changes -> not synced."""
+
+class TestNoChangesAfterRebase(AutopickTestBase):
+
+    def test_patch_already_in_master_does_not_create_pr(self):
+        """An upstream patch already represented in master produces no PR.
+
+        The tracker remains behind upstream so the script must take its normal
+        rebase path. Git drops the already-applied patch during rebase; the
+        restored script must then detect HEAD == master, delete the temporary
+        branch, advance the tracker, and never invoke gh or push a sync branch.
+        """
         work, origin, upstream = self._setup_repo()
-        # Add a new commit to upstream (not in master, not in tracker)
-        shas = self._add_upstream_commits(upstream, 1, work=work)
-        # Move tracker to the new upstream tip
-        git(work, "push", "origin", f"+{shas[-1]}:refs/heads/tracking/master")
-        git(work, "fetch", "origin")
 
-        r = self._run_autopick(work)
-        # Should NOT print "already synced" since master lacks the change
-        self.assertNotIn("already synced", r.stderr)
-
-
-class TestAncestry(AutopickTestBase):
-
-    def test_non_ancestor_tracker_stops(self):
-        """Tracker on a divergent lineage is rejected."""
-        origin = self.root / "origin.git"
-        upstream = self.root / "upstream.git"
-        make_bare_remote(origin)
-        make_bare_remote(upstream)
-
-        # Create origin with its own history
-        work = self.root / "work"
-        git(self.root, "clone", str(origin), str(work))
-        git(work, "config", "user.email", "test@test.com")
-        git(work, "config", "user.name", "Test")
-        commit(work, "origin commit", "origin1")
-        git(work, "push", "origin", "master")
-
-        # Upstream with completely different history
+        # Add two independent commits to upstream after the tracker.
         up_work = self.root / "up_work"
         git(self.root, "clone", str(upstream), str(up_work))
         git(up_work, "config", "user.email", "test@test.com")
         git(up_work, "config", "user.name", "Test")
-        commit(up_work, "upstream commit 1", "up1")
-        commit(up_work, "upstream commit 2", "up2")
+        upstream_shas = []
+        for i in range(1, 3):
+            (up_work / f"upstream-{i}.txt").write_text(f"upstream {i}")
+            git(up_work, "add", ".")
+            git(up_work, "commit", "-m", f"upstream {i}")
+            upstream_shas.append(
+                git(up_work, "rev-parse", "HEAD").stdout.strip())
         git(up_work, "push", "origin", "master")
-
-        # Tracker on origin points to a completely unrelated commit
-        # (we create a branch on origin that has no relation to upstream)
-        git(work, "remote", "add", "upstream", str(upstream))
         git(work, "fetch", "upstream")
 
-        # Put tracker at origin/master (which is not an ancestor of upstream/master)
-        origin_master = git(work, "rev-parse", "origin/master").stdout.strip()
-        git(work, "push", "origin", f"+{origin_master}:refs/heads/tracking/master")
+        # Apply the same patch independently to master, producing a different
+        # commit identity with equivalent content.
+        for i, upstream_sha in enumerate(upstream_shas, 1):
+            git(work, "cherry-pick", "--no-commit", upstream_sha)
+            git(work, "commit", "-m", f"downstream equivalent patch {i}")
+
+        # Ensure the master tip itself is not patch-equivalent to the upstream
+        # tip, so this exercises the post-rebase empty-work check rather than
+        # the earlier one-tip patch-ID shortcut.
+        (work / "downstream-only.txt").write_text("downstream")
+        git(work, "add", ".")
+        git(work, "commit", "-m", "downstream-only tip")
+        master_sha = git(work, "rev-parse", "HEAD").stdout.strip()
+        git(work, "push", "origin", "master")
         git(work, "fetch", "origin")
 
-        git(work, "config", "autopick.enabled", "true")
-        git(work, "config", "autopick.upstream", "upstream/master")
-        git(work, "config", "autopick.master", "origin/master")
-        git(work, "config", "autopick.tracker", "origin/tracking/master")
+        # A fake gh that records any invocation. The no-change path must never
+        # reach PR creation.
+        gh_marker = self.root / "gh-called"
+        fake_gh = self.root / "bin" / "gh"
+        fake_gh.parent.mkdir(parents=True, exist_ok=True)
+        fake_gh.write_text(f"""#!/bin/bash
+touch {gh_marker}
+exit 99
+""")
+        fake_gh.chmod(0o755)
+        path_env = str(fake_gh.parent) + ":" + os.environ.get("PATH", "")
 
-        r = self._run_autopick(work)
-        self.assertNotEqual(r.returncode, 0)
-        self.assertIn("not an ancestor", r.stderr)
+        r = subprocess.run(
+            [str(SCRIPTS / "git-autopick")],
+            cwd=str(work), capture_output=True, text=True,
+            env={**os.environ, "PATH": path_env})
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("no new changes after rebase", r.stderr)
+        self.assertFalse(gh_marker.exists(), "gh was invoked for an empty sync")
+        self.assertFalse(
+            git(work, "show-ref", "--verify", "--quiet",
+                "refs/heads/pr/sync-with-upstream", check=False).returncode == 0,
+            "local temporary sync branch was not deleted")
+        self.assertEqual(
+            git(work, "ls-remote", "--heads", "origin",
+                "pr/sync-with-upstream").stdout.strip(), "",
+            "remote sync branch was pushed for an empty sync")
+        self.assertEqual(
+            git(work, "rev-parse", "origin/tracking/master").stdout.strip(),
+            upstream_shas[-1],
+            "tracker did not advance to the processed upstream tip")
 
 
 class TestRebaseRange(AutopickTestBase):
@@ -224,10 +255,10 @@ echo "https://github.com/Sonic-DE/test/pull/1"
         branch_log = git(work, "log", "--oneline",
                          "origin/master..pr/sync-with-upstream",
                          check=False).stdout.strip()
-        if branch_log:
-            lines = branch_log.splitlines()
-            self.assertEqual(len(lines), 2,
-                             f"expected 2 replayed commits, got: {lines}")
+        self.assertTrue(branch_log, "expected a sync branch with replayed commits")
+        lines = branch_log.splitlines()
+        self.assertEqual(len(lines), 2,
+                         f"expected 2 replayed commits, got: {lines}")
 
 
 if __name__ == "__main__":

@@ -103,16 +103,12 @@ Key invariants:
 - The tracker records an upstream commit that has been processed. It
   always remains on upstream history and is never replaced by a rebased
   commit identity.
-- When tracker equals upstream, cherry-mark verification runs first to
-  confirm tracked changes are represented in master.
-- The tip patch-ID shortcut runs only after the tracker-equality check.
-- Before rebasing, the script verifies the tracker is an ancestor of
-  upstream. If not, it stops with diagnostics instead of replaying
-  older history.
-- The rebase uses the explicit `--onto <master> <tracker> <work-branch>`
-  form to select exactly the tracker-to-upstream range.
-- The tracker advances only to the captured upstream endpoint after
-  successful PR creation.
+- The temporary sync branch starts from upstream and rebases the
+  tracker-to-upstream work onto master.
+- If the rebased branch has the same commit as master, no PR is created;
+  the temporary branch is removed and the tracker advances.
+- Existing remote sync branches are checked before starting new work so
+  an open or unmerged sync branch is not duplicated.
 
 ## Testing
 

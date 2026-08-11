@@ -1,10 +1,5 @@
 #!/bin/bash
 # SPDX-License-Identifier: CC0-1.0
-# git-autopick - ported from sonicde-meta-build with corrected check ordering.
-# The tracker-equality + cherry-mark verification now runs BEFORE the tip
-# patch-id shortcut, preserving the cherry-mark protection while ensuring
-# "already synced" is printed when tracker equals upstream and all tracked
-# changes are represented in master.
 
 set -e
 
@@ -101,31 +96,31 @@ CURRENT_TRACKER=`git rev-parse "$AUTOPICK_TRACKER" 2>/dev/null` || {
 CURRENT_MASTER=`git rev-parse "$AUTOPICK_MASTER" 2>/dev/null` || die "cant get our master branch SHA"
 
 # After a successful rebase, advance the tracker to the upstream tip.
+# The work branch was checked out from AUTOPICK_UPSTREAM and rebased onto
+# master. Every commit in tracker..upstream was processed — applied or dropped.
+# The tracker advances to the upstream tip so processed commits aren't retried.
+# The tracker is always set to an upstream target (CURRENT_UPSTREAM), never to
+# the rebased work branch or master, so progress is marked on the upstream line.
 update_tracker() {
     msg "=== updating tracker branch $AUTOPICK_TRACKER to $CURRENT_UPSTREAM"
     git push -q "$AUTOPICK_TRACKER_REMOTE" "+${CURRENT_UPSTREAM}:refs/heads/${AUTOPICK_TRACKER_BRANCH}"
 }
 
-# 1. If tracker equals upstream, verify tracked changes are in master via
-#    cherry-mark BEFORE the tip patch-id shortcut.  This preserves the
-#    cherry-mark protection and avoids force-updating a tracker already at
-#    the upstream tip.
-#
-# --cherry-mark marks equivalent commits with '=' and inequivalent with '+'
-# (or '<'/'>' when combined with --left-right/--right-only).  We use format
-# '%m %H' so the mark is first, and grep for '^>' to count inequivalent
-# right-side (tracker/upstream) commits that are not represented in master.
 if [ "$CURRENT_UPSTREAM" == "$CURRENT_TRACKER" ]; then
-    unapplied=$(git log --cherry-mark --right-only --format='%m %H' \
-        "$AUTOPICK_MASTER"..."$CURRENT_TRACKER" 2>/dev/null | grep '^>' | wc -l)
+    # Check if the tracker commit's changes are actually in master
+    # Use git log --cherry-mark to compare commits between tracker and master
+    # Mark '=' means equivalent (already applied), '*' means not applied
+    unapplied=$(git log --cherry-mark --right-only --format='%H %m' \
+        "$AUTOPICK_MASTER"..."$CURRENT_TRACKER" 2>/dev/null | grep '^\* ' | wc -l)
     if [ "$unapplied" -eq 0 ]; then
         msg "already synced"
         exit 0
     fi
 fi
 
-# 2. Only when tracker is behind upstream: compare master-tip and upstream-tip
-#    patch IDs as a narrow shortcut.
+# Check if master tip and upstream tip introduce the same changes.
+# git diff A B C D treats C and D as path filters, not a second diff pair,
+# so we compare the two patches via git patch-id instead.
 master_pid=$(git diff "$CURRENT_MASTER^..$CURRENT_MASTER" | git patch-id --stable 2>/dev/null | cut -d' ' -f1)
 upstream_pid=$(git diff "$CURRENT_UPSTREAM^..$CURRENT_UPSTREAM" | git patch-id --stable 2>/dev/null | cut -d' ' -f1)
 if [ -n "$master_pid" ] && [ "$master_pid" = "$upstream_pid" ]; then
@@ -135,18 +130,25 @@ if [ -n "$master_pid" ] && [ "$master_pid" = "$upstream_pid" ]; then
 fi
 
 # check the remote temp branch:
+# - if it exists with unmerged commits and no PR, create a PR and exit
+# - if it exists with an open PR, skip (message and exit)
+# - if it exists but no unmerged commits and no PR, remove the branch and continue
+# - otherwise proceed (return)
 check_work_waiting() {
     local remote_url
     remote_url=$(git config --get remote.origin.url | sed 's|.*github.com[:/]||' | sed 's|\.git$||')
 
+    # Check if the branch exists on origin
     if ! git ls-remote --heads origin "$TEMP_BRANCH" | grep -q .; then
-        return
+        return  # branch does not exist, proceed normally
     fi
 
     msg "=== remote $TEMP_BRANCH exists"
 
+    # Fetch the branch
     git fetch --quiet origin "$TEMP_BRANCH"
 
+    # Check for open PR
     if command -v gh >/dev/null 2>&1 && [ -n "$remote_url" ]; then
         if gh pr list --head "$TEMP_BRANCH" --state open --repo "$remote_url" --json number --jq '.[].number' 2>/dev/null | grep -q .; then
             msg "=== remote $TEMP_BRANCH has an open PR. skipping for now"
@@ -154,6 +156,7 @@ check_work_waiting() {
         fi
     fi
 
+    # Check if the branch is ahead of master
     local ahead
     ahead=$(git rev-list --count "$AUTOPICK_MASTER"..origin/"$TEMP_BRANCH" 2>/dev/null || echo 0)
     if [ "$ahead" -gt 0 ]; then
@@ -169,6 +172,7 @@ check_work_waiting() {
         exit 0
     fi
 
+    # Branch exists but no unmerged commits and no PR: remove the branch and continue
     msg "=== remote $TEMP_BRANCH has no unmerged commits and no PR, removing stale branch"
     git push origin --delete "$TEMP_BRANCH" || msg "=== failed to delete $TEMP_BRANCH"
     return
@@ -176,25 +180,12 @@ check_work_waiting() {
 
 check_work_waiting
 
-# Verify tracker is an ancestor of upstream before rebasing.
-# If not, stop with diagnostics instead of replaying older history.
-if ! git merge-base --is-ancestor "$CURRENT_TRACKER" "$CURRENT_UPSTREAM" 2>/dev/null; then
-    merge_base=$(git merge-base "$CURRENT_TRACKER" "$CURRENT_UPSTREAM" 2>/dev/null || echo "none")
-    die "tracker $CURRENT_TRACKER is not an ancestor of upstream $CURRENT_UPSTREAM
-  master:   $CURRENT_MASTER
-  tracker:  $CURRENT_TRACKER
-  upstream: $CURRENT_UPSTREAM
-  merge-base: $merge_base
-  Recovery: use reset-trackers to reset the tracker to a shared commit."
-fi
-
 msg "=== creating working branch"
 git checkout -q "$AUTOPICK_MASTER"
 git branch -q -D "$TEMP_BRANCH" || true
 git checkout -q "$AUTOPICK_UPSTREAM" -b "$TEMP_BRANCH"
 
 # rebase, auto-resolving .po file conflicts by taking upstream (theirs)
-# Note: during merge-backend rebase, Git reverses the usual ours/theirs labels.
 do_rebase() {
     local git_dir
     git_dir=$(git rev-parse --git-dir)
@@ -240,15 +231,15 @@ do_rebase() {
         if [ -d "$git_dir/rebase-merge" ] || [ -d "$git_dir/rebase-apply" ]; then
             GIT_EDITOR=true git rebase --continue || rc=$?
         else
-            # Explicit range form: rebase commits reachable from the work
-            # branch (CURRENT_UPSTREAM) but not from the tracker, onto master.
-            git rebase -q --onto "$CURRENT_MASTER" "$CURRENT_TRACKER" "$TEMP_BRANCH" || rc=$?
+            git rebase -q "$CURRENT_TRACKER" --onto "$CURRENT_MASTER" || rc=$?
         fi
         if [ $rc -eq 0 ]; then
             if [ ! -d "$git_dir/rebase-merge" ] && [ ! -d "$git_dir/rebase-apply" ]; then
                 return 0
             fi
+            # loop to apply next commit
         else
+            # rebase failed; check for unmerged files to auto-resolve
             local unmerged_after
             unmerged_after=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
             if [ -n "$unmerged_after" ]; then
@@ -284,6 +275,7 @@ do_rebase() {
                 if [ -n "$remaining_after" ]; then
                     die "unmerged files remain after auto-resolve: $remaining_after"
                 fi
+                # All resolved; loop will continue rebase
             else
                 die "rebase failed"
             fi
