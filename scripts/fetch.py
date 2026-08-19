@@ -84,7 +84,14 @@ def fetch_missing(pkg_name: str, git_spec: dict, dest: Path,
     # fetch each remote
     for rname, rdata in (git_spec.get("remotes") or {}).items():
         depth = rdata.get("depth", 0)
-        fetch_args = ["fetch"]
+        # Fetch tags explicitly so a manifest's tagOpt (commonly --no-tags to
+        # avoid implicit tag following) cannot prevent fetch-all from updating
+        # the repository's tags.
+        fetch_args = ["fetch", "--tags"]
+        if rname == "upstream":
+            # Upstream history may be rewritten. Keep its remote-tracking refs
+            # synchronized even when the update is not a fast-forward.
+            fetch_args.append("--force")
         if depth:
             fetch_args += ["--depth", str(depth)]
         fetch_args.append(rname)
@@ -139,7 +146,9 @@ def fetch_existing(pkg_name: str, git_spec: dict, dest: Path,
     # fetch/prune declared remotes
     for rname, rdata in (git_spec.get("remotes") or {}).items():
         depth = rdata.get("depth", 0)
-        fetch_args = ["fetch", "--prune"]
+        fetch_args = ["fetch", "--prune", "--tags"]
+        if rname == "upstream":
+            fetch_args.append("--force")
         if depth:
             fetch_args += ["--depth", str(depth)]
         fetch_args.append(rname)
