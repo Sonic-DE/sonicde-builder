@@ -13,7 +13,8 @@ from unittest import mock
 SCRIPTS = Path(__file__).parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-from sync_tags import context_free_patch_id, equivalent_origin_commit, patch_id
+from sync_tags import context_free_patch_id, equivalent_origin_commit
+from sync_tags import origin_tag_name, patch_id
 from sync_tags import sync_all
 
 
@@ -51,6 +52,11 @@ class TestSyncTags(unittest.TestCase):
 
     def tearDown(self):
         self.tempdir.cleanup()
+
+    def test_origin_tag_name_removes_release_prefixes(self):
+        self.assertEqual(origin_tag_name("v6.29.0"), "6.29.0")
+        self.assertEqual(origin_tag_name("VERSION_6.29.0"), "6.29.0")
+        self.assertEqual(origin_tag_name("6.29.0"), "6.29.0")
 
     def make_repo(self, name: str,
                   existing_tag: bool = False) -> tuple[dict, Path, Path,

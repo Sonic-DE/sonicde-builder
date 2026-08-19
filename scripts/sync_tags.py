@@ -155,7 +155,9 @@ def equivalent_origin_commit(repo: Path, upstream_commit: str,
 
 
 def origin_tag_name(upstream_tag: str) -> str:
-    """Convert an upstream v-prefixed release tag to the SonicDE tag name."""
+    """Remove upstream release prefixes from the SonicDE tag name."""
+    if upstream_tag.startswith("VERSION_"):
+        return upstream_tag.removeprefix("VERSION_")
     return upstream_tag[1:] if upstream_tag.startswith("v") else upstream_tag
 
 
