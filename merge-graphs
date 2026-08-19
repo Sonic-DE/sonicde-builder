@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: CC0-1.0
+# SPDX-License-Identifier: GPL-2.0-only
 # merge-graphs - combine per-project graphify-out/graph.json files into the
 # root graphify-out/graph.json (a cross-repo graph over all graphified
 # SonicDE sub-projects). graphify's detect() never auto-discovers nested

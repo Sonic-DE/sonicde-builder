@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: CC0-1.0
+# SPDX-License-Identifier: GPL-2.0-only
 """Test sync-success-cleanup against local Git repositories.
 
 No remote GitHub repositories are contacted. The real

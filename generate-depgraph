@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: CC0-1.0
+# SPDX-License-Identifier: GPL-2.0-only
 # generate-depgraph - generate dependency graph (DOT + JSON)
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

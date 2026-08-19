@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: CC0-1.0
+# SPDX-License-Identifier: GPL-2.0-only
 # reset-trackers - explicit recovery tool to reset autopick trackers.
 # Uses cherry equivalence to find the last upstream commit shared with master.
 # Falls back to the literal merge base when no patch-equivalent commit exists.

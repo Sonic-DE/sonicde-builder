@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: CC0-1.0
+# SPDX-License-Identifier: GPL-2.0-only
 """Mirror upstream release tags onto patch-equivalent SonicDE commits."""
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: CC0-1.0
+# SPDX-License-Identifier: GPL-2.0-only
 """Regression checks for the kwin_x11 -> sonic-win executable and service rename.
 
 These tests assert that the strict rename was applied to every runtime
