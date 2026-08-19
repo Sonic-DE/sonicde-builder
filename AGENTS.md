@@ -57,6 +57,13 @@ sonicde-builder-wip/
 
 ## Context Protocol
 
+### Worktree Policy
+
+Never create Agent Manager worktrees or invoke `agent_manager` with
+`mode: "worktree"`. Work only in the current checkout. This restriction
+persists across sessions and may only be changed by an explicit user edit to
+`kilo.json`.
+
 1. This project is its own Git repository. Commit builder changes here;
    do not commit generated artifacts (`src/*/`, `build/`, `state/`,
    `cmake/SonicDEProjects.cmake`, `repo-list`, `depgraph.*`).

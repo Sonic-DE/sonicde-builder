@@ -1,0 +1,8 @@
+{
+  "$schema": "https://kilo.ai/config.json",
+  "permission": {
+    "agent_manager": {
+      "worktree": "deny"
+    }
+  }
+}
