@@ -17,7 +17,7 @@ python3 scripts/repositories.py -model state/model.json --view repo-list --out r
 REPOS=$(cat repo-list)
 SCRIPT_DIR_ABS="$(pwd)/scripts"
 
-FAILED_FILE="$(pwd)/state/failed-autopick-repos.txt"
+FAILED_FILE="$(pwd)/state/failed-sync-repos.txt"
 mkdir -p state
 > "$FAILED_FILE"
 

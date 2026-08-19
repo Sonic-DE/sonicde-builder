@@ -43,7 +43,9 @@ sonicde-builder-wip/
 ├── state/
 │   ├── model.json                     # normalized active closure model (generated)
 │   ├── logs/                          # per-command and test logs
-│   └── failed-autopick-repos.txt      # autopick failure list
+│   ├── failed-sync-repos.txt          # upstream sync failure list
+│   ├── failed-sync-tag-repos.txt      # tag sync failure list
+│   └── success-sync-tag-repos.txt     # successful tag sync list
 └── tests/                             # Python unit tests (pytest/CTest)
     ├── test_config.py
     ├── test_config_comprehensive.py
