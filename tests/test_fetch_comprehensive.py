@@ -270,6 +270,53 @@ class TestFetchMultiRemote(unittest.TestCase):
         remotes = git(dest, "remote").stdout.split()
         self.assertIn("upstream", remotes)
 
+    def test_upstream_non_fast_forward_is_forced(self):
+        """Rewritten upstream history updates its remote-tracking branch."""
+        origin_remote = self.root / "remotes" / "origin.git"
+        upstream_remote = self.root / "remotes" / "upstream.git"
+        make_bare_remote(origin_remote)
+        make_bare_remote(upstream_remote)
+
+        origin_work = make_work_repo(self.root / "origin-work", origin_remote)
+        commit(origin_work, "origin init")
+        git(origin_work, "push", "origin", "master")
+
+        upstream_work = make_work_repo(
+            self.root / "upstream-work", upstream_remote)
+        commit(upstream_work, "upstream init")
+        git(upstream_work, "push", "origin", "master")
+
+        model = self._model("sonicde/test", {
+            "ref": "origin/master",
+            "local_branch": "master",
+            "remotes": {
+                "origin": {
+                    "url": str(origin_remote),
+                    "fetch": ["refs/heads/*:refs/remotes/origin/*"],
+                },
+                "upstream": {
+                    "url": str(upstream_remote),
+                    "fetch": ["refs/heads/*:refs/remotes/upstream/*"],
+                },
+            },
+        })
+        self.assertEqual(fetch_all(model), 0)
+        dest = self.source_root / "sonicde" / "test"
+        old_upstream = git(dest, "rev-parse", "upstream/master").stdout.strip()
+
+        (upstream_work / "file.txt").write_text("rewritten upstream")
+        git(upstream_work, "add", "file.txt")
+        git(upstream_work, "commit", "--amend", "-m", "rewritten init")
+        rewritten_upstream = git(
+            upstream_work, "rev-parse", "HEAD").stdout.strip()
+        self.assertNotEqual(old_upstream, rewritten_upstream)
+        git(upstream_work, "push", "--force", "origin", "master")
+
+        self.assertEqual(fetch_all(model), 0)
+        fetched_upstream = git(
+            dest, "rev-parse", "upstream/master").stdout.strip()
+        self.assertEqual(fetched_upstream, rewritten_upstream)
+
     def test_existing_checkout_preserves_branch_and_index(self):
         """Existing checkout keeps its branch, index, and untracked files."""
         origin_remote = self.root / "remotes" / "origin.git"

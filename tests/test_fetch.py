@@ -129,6 +129,39 @@ class TestFetch(unittest.TestCase):
             capture_output=True, text=True).stdout.strip()
         self.assertEqual(old_head, new_head)
 
+    def test_tags_fetched_for_new_and_existing_checkout(self):
+        """Tags are fetched even when the remote disables implicit tags."""
+        remote = self._make_remote("test-tags")
+        work = self.root / "work" / "test-tags"
+        subprocess.run(["git", "tag", "v1"], cwd=str(work),
+                       capture_output=True, check=True)
+        subprocess.run(["git", "push", "origin", "v1"], cwd=str(work),
+                       capture_output=True, check=True)
+
+        model = self._model("sonicde/test-tags", {
+            "ref": "origin/master",
+            "local_branch": "master",
+            "remotes": {"origin": {
+                "url": str(remote),
+                "fetch": ["refs/heads/*:refs/remotes/origin/*"],
+                "tagopt": "--no-tags",
+            }},
+        })
+        self.assertEqual(fetch_all(model), 0)
+        dest = self.source_root / "sonicde" / "test-tags"
+        self.assertEqual(subprocess.run(
+            ["git", "tag", "--list", "v1"], cwd=str(dest),
+            capture_output=True, text=True, check=True).stdout.strip(), "v1")
+
+        subprocess.run(["git", "tag", "v2"], cwd=str(work),
+                       capture_output=True, check=True)
+        subprocess.run(["git", "push", "origin", "v2"], cwd=str(work),
+                       capture_output=True, check=True)
+        self.assertEqual(fetch_all(model), 0)
+        self.assertEqual(subprocess.run(
+            ["git", "tag", "--list", "v2"], cwd=str(dest),
+            capture_output=True, text=True, check=True).stdout.strip(), "v2")
+
     def test_dry_run_no_mutation(self):
         """Dry run does not create or mutate any repositories."""
         remote = self._make_remote("test-dry")

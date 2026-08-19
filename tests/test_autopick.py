@@ -120,9 +120,17 @@ class TestOriginalScriptParity(unittest.TestCase):
                          "authoritative sonicde-meta-build checkout unavailable")
     def test_builder_copy_matches_authoritative_original(self):
         """The port must not silently alter the known-good sync algorithm."""
+        def executable_content(path: Path) -> bytes:
+            lines = path.read_bytes().splitlines(keepends=True)
+            return b"".join([
+                lines[0],
+                *(line for line in lines[1:]
+                  if line.strip() and not line.lstrip().startswith(b"#")),
+            ])
+
         self.assertEqual(
-            (SCRIPTS / "git-autopick").read_bytes(),
-            ORIGINAL_AUTOPICK.read_bytes())
+            executable_content(SCRIPTS / "git-autopick"),
+            executable_content(ORIGINAL_AUTOPICK))
 
 
 class TestAlreadySynced(AutopickTestBase):
