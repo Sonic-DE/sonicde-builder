@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: CC0-1.0
+# sync-tags.sh - mirror each upstream's latest tag onto its SonicDE commit
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+python3 scripts/config.py -root . \
+    -solution config/sonicde/solutions/sonicde.yaml \
+    -out state/model.json
+
+python3 scripts/sync_tags.py -model state/model.json "$@"
