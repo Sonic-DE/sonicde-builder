@@ -1,9 +1,7 @@
 #
-# Build all SonicDE packages into $HOME/SONICDE. Qt 6 is supplied by the
-# operating system and is deliberately not fetched or built by this solution.
-#
-# Yet just tested on Devuan Excalibur - other distros might require
-# some additional tweaking.
+# Build all SonicDE packages into the project-local build directory. Qt 6 is
+# supplied by the operating system and is deliberately not fetched or built by
+# this solution.
 
 sonicde_git: git@github.com:Sonic-DE
 xlibre_git: https://github.com/X11Libre
@@ -25,7 +23,7 @@ plasma_version: v6.7.0
 sonic_depth: 0
 upstream_depth: 0
 
-install-prefix: ${@PROJECT::@homedir}/SONICDE
+install-prefix: ${@PROJECT::@rootdir}/build
 
 # what to build (can use packages or provides here)
 # just listing all sonic repos alphabetically here
