@@ -15,6 +15,7 @@ sonicde-builder-wip/
 ├── sync                              # run upstream sync (autopick) for all repos
 ├── sync-fail-cleanup                 # destructive recovery (--force required)
 ├── sync-success-cleanup              # reset repos to origin/master after PRs merge
+├── sync-tags                         # mirror upstream release tags onto SonicDE commits
 ├── build-all                          # full build: config -> validate -> generate -> cmake
 ├── check-new-repos                    # compare GitHub org listing against managed repos
 ├── fetch-all                          # fetch all active repositories
@@ -35,6 +36,7 @@ sonicde-builder-wip/
 │   ├── fetch.py                       # fetch Git repositories from manifest metadata
 │   ├── validate.py                    # validate system deps (pkg-config) and Qt6 Core
 │   ├── generate.py                    # generate CMake ExternalProject superbuild + DOT
+│   ├── sync_tags.py                   # mirror upstream tags onto SonicDE commits
 │   └── git-autopick                   # upstream sync (rebase tracker range onto master)
 ├── src/
 │   ├── 3rdparty/<project>/            # one independent Git repository per project
@@ -47,12 +49,17 @@ sonicde-builder-wip/
 │   ├── failed-sync-tag-repos.txt      # tag sync failure list
 │   └── success-sync-tag-repos.txt     # successful tag sync list
 └── tests/                             # Python unit tests (pytest/CTest)
+    ├── fixtures/                      # shared local Git repo / CMake fixtures
     ├── test_config.py
     ├── test_config_comprehensive.py
     ├── test_fetch.py
     ├── test_fetch_comprehensive.py
     ├── test_superbuild.py
-    └── test_autopick.py
+    ├── test_autopick.py
+    ├── test_autopick_success_cleanup.py
+    ├── test_sync_tags.py
+    ├── test_panelview.py
+    └── test_sonic_win_rename.py
 ```
 
 ## Context Protocol
@@ -66,7 +73,7 @@ persists across sessions and may only be changed by an explicit user edit to
 
 1. This project is its own Git repository. Commit builder changes here;
    do not commit generated artifacts (`src/*/`, `build/`, `state/`,
-   `cmake/SonicDEProjects.cmake`, `repo-list`, `depgraph.*`).
+   `cmake/`, `repo-list`, `depgraph.*`, `graphify-out/`).
 2. Every immediate child of `src/3rdparty/` and `src/sonicde/` is a
    separate independent Git repository fetched by `fetch-all`. Run Git
    commands inside the specific project repository being changed, not
@@ -118,6 +125,11 @@ Key invariants:
   the temporary branch is removed and the tracker advances.
 - Existing remote sync branches are checked before starting new work so
   an open or unmerged sync branch is not duplicated.
+
+`sync-tags` (via `scripts/sync_tags.py`) is a separate flow: it mirrors
+each upstream's latest release tag onto the patch-equivalent SonicDE
+commit. It does not create PRs. Results land in
+`state/{failed,success}-sync-tag-repos.txt`.
 
 ## Testing
 
@@ -177,6 +189,6 @@ Rules:
 - The `repo-list` file is a generated compatibility artifact, not
   authoritative. Repository views derive from the normalized model.
 - Root command names:
-  `sync`, `sync-fail-cleanup`, `sync-success-cleanup`,
+  `sync`, `sync-fail-cleanup`, `sync-success-cleanup`, `sync-tags`,
   `build-all`, `check-new-repos`, `fetch-all`, `generate-depgraph`,
   `install-deps`, `merge-graphs`, `reset-trackers`.
