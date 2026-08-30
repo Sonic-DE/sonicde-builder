@@ -1,0 +1,27 @@
+sources:
+    git:
+        ref: origin/${master_branch}
+        remotes:
+            origin:
+                url: ${sonicde_git}/${@basename}.git
+                depth: ${sonic_depth}
+                fetch: ${@SOLUTION::fetch::origin}
+        config:
+            autopick.enabled: 'false'
+            autopick.master: origin/${master_branch}
+            advice.detachedHead: 'false'
+            remote.origin.tagOpt: --no-tags
+        local-branch: ${master_branch}
+
+master_branch: master
+buildsystem: cmake
+
+build-depends:
+    - sonicde/sonic-frameworks-cmake-modules
+
+depends:
+    # Supplies the SDDM greeter and the shared org.kde.breeze.components QML
+    # runtime through its sonic-workspace dependency.
+    - sonicde/sonic-login-manager
+    # Supplies the Next wallpaper referenced by theme.conf.
+    - sonicde/sonic-workspace-wallpapers

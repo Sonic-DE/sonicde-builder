@@ -35,6 +35,7 @@ build:
     - sonicde/sonic-audio-applet-pulse
     - sonicde/sonic-bluetooth-runtime
     - sonicde/sonic-breeze
+    - sonicde/sonic-breeze-sddm
     - sonicde/sonic-browser-integration
     - sonicde/sonic-crypto-library
     - sonicde/sonic-daemon
