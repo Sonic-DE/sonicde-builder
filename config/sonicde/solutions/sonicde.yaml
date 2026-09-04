@@ -150,6 +150,7 @@ build:
     - sonicde/sonic-terminal
     - sonicde/sonic-terminal-tools
     - sonicde/sonic-thunderbolt
+    - sonicde/sonic-tv-interface
     - sonicde/sonic-vault
     - sonicde/sonic-welcome-center
     - sonicde/sonic-win
