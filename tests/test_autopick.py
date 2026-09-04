@@ -220,6 +220,108 @@ exit 99
             "tracker did not advance to the processed upstream tip")
 
 
+class TestIgnoredAutomationCommits(AutopickTestBase):
+
+    def _bot_author_env(self) -> dict[str, str]:
+        return {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "l10n daemon script",
+            "GIT_AUTHOR_EMAIL": "scripty@kde.org",
+        }
+
+    def _fake_gh(self, marker: Path = None) -> dict[str, str]:
+        fake_gh = self.root / "bin" / "gh"
+        fake_gh.parent.mkdir(parents=True, exist_ok=True)
+        marker_command = f"touch {marker}\n" if marker else ""
+        fake_gh.write_text(f"""#!/bin/bash
+{marker_command}echo "https://github.com/Sonic-DE/test/pull/1"
+""")
+        fake_gh.chmod(0o755)
+        return {
+            **os.environ,
+            "PATH": str(fake_gh.parent) + ":" + os.environ.get("PATH", ""),
+        }
+
+    def test_bot_only_range_advances_tracker_without_pr(self):
+        """A range containing only scripty commits is processed without a PR."""
+        work, origin, upstream = self._setup_repo()
+        up_work = self.root / "up_work"
+        git(self.root, "clone", str(upstream), str(up_work))
+        git(up_work, "config", "user.email", "test@test.com")
+        git(up_work, "config", "user.name", "Test")
+
+        (up_work / "translation.po").write_text("automated translation")
+        git(up_work, "add", ".")
+        git(up_work, "commit", "-m", "SVN_SILENT made messages",
+            env=self._bot_author_env())
+        bot_sha = git(up_work, "rev-parse", "HEAD").stdout.strip()
+        git(up_work, "push", "origin", "master")
+        git(work, "fetch", "upstream")
+
+        gh_marker = self.root / "gh-called"
+        r = subprocess.run(
+            [str(SCRIPTS / "git-autopick")],
+            cwd=str(work), capture_output=True, text=True,
+            env=self._fake_gh(gh_marker))
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("ignoring upstream commit", r.stderr)
+        self.assertIn("no new changes after rebase", r.stderr)
+        self.assertFalse(gh_marker.exists(), "gh was invoked for ignored commits")
+        self.assertEqual(
+            git(work, "rev-parse", "origin/tracking/master").stdout.strip(),
+            bot_sha,
+            "tracker did not advance past the ignored bot commit")
+        self.assertFalse(
+            git(work, "cat-file", "-e", "origin/master:translation.po",
+                check=False).returncode == 0,
+            "ignored bot changes reached master")
+
+    def test_bot_commit_is_removed_from_mixed_sync_branch(self):
+        """Human changes are synced while adjacent scripty changes are dropped."""
+        work, origin, upstream = self._setup_repo()
+        up_work = self.root / "up_work"
+        git(self.root, "clone", str(upstream), str(up_work))
+        git(up_work, "config", "user.email", "test@test.com")
+        git(up_work, "config", "user.name", "Test")
+
+        (up_work / "translation.po").write_text("automated translation")
+        git(up_work, "add", ".")
+        git(up_work, "commit", "-m", "SVN_SILENT made messages",
+            env=self._bot_author_env())
+
+        (up_work / "feature.txt").write_text("human change")
+        git(up_work, "add", ".")
+        git(up_work, "commit", "-m", "Add human feature")
+        upstream_tip = git(up_work, "rev-parse", "HEAD").stdout.strip()
+        git(up_work, "push", "origin", "master")
+        git(work, "fetch", "upstream")
+
+        r = subprocess.run(
+            [str(SCRIPTS / "git-autopick")],
+            cwd=str(work), capture_output=True, text=True,
+            env=self._fake_gh())
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("ignoring upstream commit", r.stderr)
+        branch = "origin/pr/sync-with-upstream"
+        self.assertEqual(
+            git(work, "rev-list", "--count", f"origin/master..{branch}").stdout.strip(),
+            "1")
+        self.assertEqual(
+            git(work, "show", f"{branch}:feature.txt").stdout,
+            "human change")
+        self.assertNotEqual(
+            git(work, "cat-file", "-e", f"{branch}:translation.po",
+                check=False).returncode,
+            0,
+            "ignored bot file was included in the sync branch")
+        self.assertEqual(
+            git(work, "rev-parse", "origin/tracking/master").stdout.strip(),
+            upstream_tip,
+            "tracker did not advance to the full upstream tip")
+
+
 class TestRebaseRange(AutopickTestBase):
 
     def test_rebase_selects_tracker_to_upstream(self):

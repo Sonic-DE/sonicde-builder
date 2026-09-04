@@ -4,9 +4,11 @@
 set -e
 
 TEMP_BRANCH="pr/sync-with-upstream"
+IGNORED_AUTHOR_EMAIL="scripty@kde.org"
 
 WD=`pwd`
 REPONAME=$(basename "$WD")
+SCRIPT_PATH=$(readlink -f "$0")
 
 die() {
     echo "[$REPONAME] $*" >&2
@@ -16,6 +18,40 @@ die() {
 msg() {
     echo "[$REPONAME] $*" >&2
 }
+
+# Interactive rebase helper. Mark ignored automation commits as "drop" before
+# Git attempts to apply them, so they cannot introduce changes or conflicts.
+filter_rebase_todo() {
+    local todo="$1"
+    local filtered="${todo}.filtered"
+    local line command rest commit author_email
+
+    : > "$filtered"
+    while IFS= read -r line || [ -n "$line" ]; do
+        command=${line%% *}
+        case "$command" in
+            pick|p)
+                rest=${line#* }
+                commit=${rest%% *}
+                author_email=$(git show -s --format='%ae' "$commit") \
+                    || die "cannot inspect rebase commit $commit"
+                if [ "$author_email" = "$IGNORED_AUTHOR_EMAIL" ]; then
+                    msg "ignoring upstream commit $commit by $IGNORED_AUTHOR_EMAIL"
+                    printf 'drop %s\n' "$rest" >> "$filtered"
+                    continue
+                fi
+                ;;
+        esac
+        printf '%s\n' "$line" >> "$filtered"
+    done < "$todo"
+    mv "$filtered" "$todo"
+}
+
+if [ "${1:-}" = "--filter-rebase-todo" ]; then
+    [ "${2:-}" ] || die "missing rebase todo path"
+    filter_rebase_todo "$2"
+    exit 0
+fi
 
 ## load configuration
 AUTOPICK_UPSTREAM=`git config autopick.upstream || true`
@@ -231,7 +267,9 @@ do_rebase() {
         if [ -d "$git_dir/rebase-merge" ] || [ -d "$git_dir/rebase-apply" ]; then
             GIT_EDITOR=true git rebase --continue || rc=$?
         else
-            git rebase -q "$CURRENT_TRACKER" --onto "$CURRENT_MASTER" || rc=$?
+            GIT_SEQUENCE_EDITOR="$SCRIPT_PATH --filter-rebase-todo" \
+                git rebase -i -q --empty=drop "$CURRENT_TRACKER" \
+                    --onto "$CURRENT_MASTER" || rc=$?
         fi
         if [ $rc -eq 0 ]; then
             if [ ! -d "$git_dir/rebase-merge" ] && [ ! -d "$git_dir/rebase-apply" ]; then
