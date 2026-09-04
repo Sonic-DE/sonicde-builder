@@ -322,6 +322,100 @@ class TestIgnoredAutomationCommits(AutopickTestBase):
             "tracker did not advance to the full upstream tip")
 
 
+class TestIgnoredVersionBumpCommits(AutopickTestBase):
+
+    def _fake_gh(self, marker: Path = None) -> dict[str, str]:
+        fake_gh = self.root / "bin" / "gh"
+        fake_gh.parent.mkdir(parents=True, exist_ok=True)
+        marker_command = f"touch {marker}\n" if marker else ""
+        fake_gh.write_text(f"""#!/bin/bash
+{marker_command}echo "https://github.com/Sonic-DE/test/pull/1"
+""")
+        fake_gh.chmod(0o755)
+        return {
+            **os.environ,
+            "PATH": str(fake_gh.parent) + ":" + os.environ.get("PATH", ""),
+        }
+
+    def _commit_with_message(self, repo: Path, message: str, filename: str = None) -> str:
+        target = repo / (filename or f"commit-{message[:10]}.txt")
+        target.write_text(message)
+        git(repo, "add", ".")
+        git(repo, "commit", "-m", message)
+        return git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    def test_version_bump_only_range_advances_tracker_without_pr(self):
+        """A range containing only version bumps is processed without a PR."""
+        work, origin, upstream = self._setup_repo()
+        up_work = self.root / "up_work"
+        git(self.root, "clone", str(upstream), str(up_work))
+        git(up_work, "config", "user.email", "test@test.com")
+        git(up_work, "config", "user.name", "Test")
+
+        for message in (
+            "Update version for new release",
+            "Update version to 6.7.5",
+            "Update dependency version to 6.7.5",
+            "Upgrade release service version to 6.7.5",
+        ):
+            self._commit_with_message(up_work, message)
+        upstream_tip = git(up_work, "rev-parse", "HEAD").stdout.strip()
+        git(up_work, "push", "origin", "master")
+        git(work, "fetch", "upstream")
+
+        gh_marker = self.root / "gh-called"
+        r = subprocess.run(
+            [str(SCRIPTS / "git-autopick")],
+            cwd=str(work), capture_output=True, text=True,
+            env=self._fake_gh(gh_marker))
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("no new changes after rebase", r.stderr)
+        self.assertFalse(gh_marker.exists(), "gh was invoked for version bumps")
+        self.assertEqual(
+            git(work, "rev-parse", "origin/tracking/master").stdout.strip(),
+            upstream_tip,
+            "tracker did not advance past the version-bump commits")
+
+    def test_version_bump_ignored_while_valid_commit_from_same_author_kept(self):
+        """Adjacent valid commits from version-bump authors must still be synced."""
+        work, origin, upstream = self._setup_repo()
+        up_work = self.root / "up_work"
+        git(self.root, "clone", str(upstream), str(up_work))
+        git(up_work, "config", "user.email", "test@test.com")
+        git(up_work, "config", "user.name", "Test")
+
+        (up_work / "version-bump.txt").write_text("bump")
+        git(up_work, "add", ".")
+        git(up_work, "commit", "-m", "Update version to 6.7.5")
+        (up_work / "real-fix.txt").write_text("fix")
+        git(up_work, "add", ".")
+        git(up_work, "commit", "-m", "Add real fix")
+        upstream_tip = git(up_work, "rev-parse", "HEAD").stdout.strip()
+        git(up_work, "push", "origin", "master")
+        git(work, "fetch", "upstream")
+
+        r = subprocess.run(
+            [str(SCRIPTS / "git-autopick")],
+            cwd=str(work), capture_output=True, text=True,
+            env=self._fake_gh())
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("ignoring upstream commit", r.stderr)
+        branch = "origin/pr/sync-with-upstream"
+        self.assertEqual(
+            git(work, "rev-list", "--count", f"origin/master..{branch}").stdout.strip(),
+            "1",
+            "expected exactly the valid commit to be synced")
+        self.assertEqual(
+            git(work, "log", "-1", "--format=%s", branch).stdout.strip(),
+            "Add real fix",
+            "expected the valid commit message")
+        self.assertEqual(
+            git(work, "show", f"{branch}:real-fix.txt").stdout,
+            "fix")
+
+
 class TestRebaseRange(AutopickTestBase):
 
     def test_rebase_selects_tracker_to_upstream(self):
