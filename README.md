@@ -21,6 +21,48 @@ howto:
 * check for missing GitHub repos: `./check-new-repos`
 * list OS packages to install: `./install-deps`
 * merge per-project graphify graphs: `./merge-graphs`
+* bump Plasma version and tag: `./version-bump-plasma 6.7.5`
+* bump Frameworks version and tag: `./version-bump-frameworks 6.30.0`
+* bump System version and tag: `./version-bump-system 26.04.3`
+* list repos in a category: `./version-bump-plasma --list`
+
+version bumps:
+--------------
+
+Three scripts bump the version across all repos in a release group.
+Each script identifies its repos by the version-variable pattern in
+`CMakeLists.txt` (not tags), updates the version, commits, and creates
+a `v<version>` tag.  Unlike KDE's release scripts, no second "bump to
+next dev version" commit is created -- we make patch releases against
+these tagged versions (e.g. `6.7.4.1`).
+
+    ./version-bump-plasma 6.7.5
+    ./version-bump-frameworks 6.30.0
+    ./version-bump-system 26.04.3
+
+The version must be in `X.Y.Z` format.  Repos already at the target
+version are skipped.  Use `--dry-run` to preview:
+
+    ./version-bump-plasma 6.7.5 --dry-run
+
+Use `--list` to print the matching repos without modifying anything:
+
+    ./version-bump-plasma --list
+    ./version-bump-frameworks --list
+    ./version-bump-system --list
+
+**Plasma** repos use `set(PROJECT_VERSION "X.Y.Z")` in CMakeLists.txt.
+**Frameworks** repos use `set(KF_VERSION "X.Y.Z")` and additionally
+update `set(KF_DEP_VERSION "X.Y.Z")` and `find_package(ECM X.Y.Z)`
+when present.  **System** repos use the three
+`set(RELEASE_SERVICE_VERSION_MAJOR/MINOR/MICRO "X")` variables.
+
+Repos that don't follow these patterns (third-party libraries like
+QCA, PolkitQt, PulseAudioQt, etc.) are not managed by the bump
+scripts.
+
+Each script requires a clean working tree in every repo it touches.
+Repos with uncommitted changes are skipped with a warning.
 
 architecture:
 -------------

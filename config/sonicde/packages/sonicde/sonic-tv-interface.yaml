@@ -65,3 +65,7 @@ depends:
     - sonicde/sonic-terminal-tools
     - sonicde/sonic-win
     - sonicde/sonic-workspace
+    - sonicde/xdg-desktop-portal-sonicde
+
+cmake-extra-args:
+    - -DBUILD_TESTING=ON

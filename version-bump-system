@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
+# version-bump-system - Bump version for all System (Gear) repos and create tags.
+#
+# System repos use set(RELEASE_SERVICE_VERSION_MAJOR/MINOR/MICRO "X") in
+# CMakeLists.txt.  The new version is passed as the first argument (X.Y.Z
+# format) and split into the three components.
+#
+# Unlike KDE's release scripts, no second "bump to next dev version" commit
+# is created.  We make patch releases against these tagged versions.
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+exec python3 "$SCRIPT_DIR/scripts/version_bump.py" system "$@"

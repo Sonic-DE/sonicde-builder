@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
+# version-bump-frameworks - Bump version for all Frameworks repos and create tags.
+#
+# Frameworks repos use set(KF_VERSION "X.Y.Z") in CMakeLists.txt.
+# The new version is passed as the first argument (X.Y.Z format).
+#
+# Unlike KDE's release scripts, no second "bump to next dev version" commit
+# is created.  We make patch releases against these tagged versions.
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+exec python3 "$SCRIPT_DIR/scripts/version_bump.py" frameworks "$@"
