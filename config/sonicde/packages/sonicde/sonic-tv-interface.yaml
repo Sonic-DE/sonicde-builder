@@ -59,7 +59,6 @@ depends:
     - sonicde/sonic-frameworks-windowsystem
     - sonicde/sonic-interface-libraries
     - sonicde/sonic-network-manager
-    - sonicde/sonic-plasma5-support-library
     - sonicde/sonic-screen
     - sonicde/sonic-screen-library
     - sonicde/sonic-terminal-tools

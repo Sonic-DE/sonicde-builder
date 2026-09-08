@@ -26,6 +26,3 @@ buildsystem: cmake
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
-
-cmake-extra-args:
-    - -DBUILD_WITH_QT6=ON

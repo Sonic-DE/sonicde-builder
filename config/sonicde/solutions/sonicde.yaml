@@ -127,7 +127,6 @@ build:
     - sonicde/sonic-oxygen-sounds
     - sonicde/sonic-partition-manager
     - sonicde/sonic-pipewire
-    - sonicde/sonic-plasma5-support-library
     - sonicde/sonic-polkit
     - sonicde/sonic-polkit-agent
     - sonicde/sonic-pyside-setup

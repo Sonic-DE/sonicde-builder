@@ -40,4 +40,3 @@ depends:
     - sonicde/sonic-frameworks-windowsystem
     - sonicde/sonic-frameworks-xml-gui
     - sonicde/sonic-interface-libraries
-    - sonicde/sonic-plasma5-support-library

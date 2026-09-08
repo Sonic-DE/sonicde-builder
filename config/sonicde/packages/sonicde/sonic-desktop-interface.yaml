@@ -43,7 +43,6 @@ depends:
     - sonicde/sonic-frameworks-text-codec
     - sonicde/sonic-frameworks-xml-gui
     - sonicde/sonic-interface-libraries
-    - sonicde/sonic-plasma5-support-library
     - sonicde/sonic-screenlocker
     - sonicde/sonic-win
     - sonicde/sonic-workspace
