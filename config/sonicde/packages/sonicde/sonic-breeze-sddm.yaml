@@ -20,8 +20,8 @@ build-depends:
     - sonicde/sonic-frameworks-cmake-modules
 
 depends:
-    # Supplies the SDDM greeter and the shared org.kde.breeze.components QML
-    # runtime through its sonic-workspace dependency.
-    - sonicde/sonic-login-manager
+    # Supplies org.kde.breeze.components and the private keyboard-indicator
+    # QML module imported by the original-SDDM theme.
+    - sonicde/sonic-workspace
     # Supplies the Next wallpaper referenced by theme.conf.
     - sonicde/sonic-workspace-wallpapers
