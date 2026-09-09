@@ -1,0 +1,7 @@
+provides: sys/python3-pygdbmi
+type: system
+python-modules: pygdbmi
+platform-packages:
+    debian: python3-pygdbmi
+    devuan: python3-pygdbmi
+    arch: python-pygdbmi

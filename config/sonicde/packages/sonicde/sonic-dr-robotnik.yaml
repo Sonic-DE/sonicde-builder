@@ -28,9 +28,13 @@ build:
     cmake:
         args:
             - -DENABLE_SYSTEMD_COREDUMP=OFF
+            - -DWITH_PYTHON_VENDORING=OFF
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/python3-pygdbmi
+    - os-installed/python3-psutil
+    - os-installed/python3-sentry-sdk
 
 depends:
     - sonicde/sonic-frameworks-core-addons

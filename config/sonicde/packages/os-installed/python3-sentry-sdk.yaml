@@ -1,0 +1,7 @@
+provides: sys/python3-sentry-sdk
+type: system
+python-modules: sentry_sdk
+platform-packages:
+    debian: python3-sentry-sdk
+    devuan: python3-sentry-sdk
+    arch: python-sentry_sdk

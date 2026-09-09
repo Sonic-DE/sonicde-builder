@@ -1,0 +1,7 @@
+provides: sys/python3-psutil
+type: system
+python-modules: psutil
+platform-packages:
+    debian: python3-psutil
+    devuan: python3-psutil
+    arch: python-psutil
