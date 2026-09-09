@@ -171,6 +171,10 @@ def test_absolute_install_destination_is_redirected_before_full_build(tmp_path):
     relative_prefix = final_prefix.relative_to("/")
     assert (stage / relative_prefix / "lib/python3.14/site-packages/fixture/payload.py").is_file()
     assert not final_prefix.exists()
+    cache_lines = (build_root / "pkg/CMakeCache.txt").read_text().splitlines()
+    staging_values = [line.split("=", 1)[1] for line in cache_lines
+                      if line.startswith("CMAKE_STAGING_PREFIX:")]
+    assert staging_values == []
 
 
 def test_preflight_checks_all_packages_before_install(tmp_path, monkeypatch):

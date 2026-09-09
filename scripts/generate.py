@@ -16,13 +16,16 @@ def sanitize_target(name: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_]", "_", name)
 
 
-def generate_cmake(model: dict, out_file: Path, staging_root: Path | None = None) -> None:
+def generate_cmake(model: dict, out_file: Path, staging_root: Path | None = None,
+                   jobs: int | None = None) -> None:
     """Generate the SonicDEProjects.cmake file."""
     packages = model["packages"]
     edges = model["edges"]
     install_prefix = model.get("install_prefix", "")
     source_root = model.get("source_root", "")
     build_dir = model.get("build_dir", "")
+    if jobs is not None and jobs < 1:
+        raise ValueError("jobs must be a positive integer")
     if staging_root is not None:
         if not Path(install_prefix).is_absolute() or ".." in Path(install_prefix).parts:
             raise ValueError("Staged installation requires an absolute install prefix without '..'")
@@ -90,6 +93,10 @@ def generate_cmake(model: dict, out_file: Path, staging_root: Path | None = None
         if install_prefix:
             cmake_args.append(f"-DCMAKE_INSTALL_PREFIX={install_prefix}")
             cmake_args.append(f"-DCMAKE_PREFIX_PATH={search_prefix}")
+        if staging_root is not None:
+            # Clear stale caches created by the unsafe CMAKE_STAGING_PREFIX
+            # implementation; DESTDIR is the only pre-deployment redirect.
+            cmake_args.append("-UCMAKE_STAGING_PREFIX")
         cmake_args += pkg.get("cmake_extra_args", [])
 
         # Escape args for CMake
@@ -99,7 +106,8 @@ def generate_cmake(model: dict, out_file: Path, staging_root: Path | None = None
         # Build command: configure, build, and install in one step.
         # INSTALL_COMMAND "" suppresses the default install step, so install
         # must be part of the build command.
-        build_cmd = "cmake --build <BINARY_DIR> --target install"
+        parallel_arg = f" --parallel {jobs}" if jobs is not None else ""
+        build_cmd = f"cmake --build <BINARY_DIR>{parallel_arg} --target install"
         configure_cmd = None
         if staging_root is not None:
             # ExternalProject configure and build run in separate processes;
@@ -119,7 +127,7 @@ def generate_cmake(model: dict, out_file: Path, staging_root: Path | None = None
             configure_cmd = (f'"${{CMAKE_COMMAND}}" -E env {staged_env} '
                              f'"${{CMAKE_COMMAND}}" -S <SOURCE_DIR> -B <BINARY_DIR> {cmake_args_str}')
             build_cmd = (f'"${{CMAKE_COMMAND}}" -E env {staged_env} "DESTDIR={staging_root}" '
-                         '"${CMAKE_COMMAND}" --build <BINARY_DIR> --target install')
+                         f'"${{CMAKE_COMMAND}}" --build <BINARY_DIR>{parallel_arg} --target install')
 
         lines.append(f"# ExternalProject: {name}")
         lines.append(f"ExternalProject_add({target}")
@@ -186,12 +194,13 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--dot-out", default="depgraph.dot")
     ap.add_argument("--staging-root", type=Path,
                     help="Privately stage dependency installs while retaining the final prefix")
+    ap.add_argument("--jobs", type=int, help="Maximum parallel jobs within each package build")
     args = ap.parse_args(argv)
 
     with open(args.model) as f:
         model = json.load(f)
 
-    generate_cmake(model, Path(args.cmake_out), args.staging_root)
+    generate_cmake(model, Path(args.cmake_out), args.staging_root, args.jobs)
     print(f"CMake generated: {args.cmake_out}")
     generate_dot(model, Path(args.dot_out))
     print(f"DOT generated: {args.dot_out}")

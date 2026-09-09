@@ -126,6 +126,20 @@ class TestGenerateCMake(unittest.TestCase):
         self.assertIn(f"QT_PLUGIN_PATH={staged_prefix}/lib64/plugins:", text)
         self.assertIn(f"QML_IMPORT_PATH={staged_prefix}/lib64/qml:", text)
 
+    def test_package_parallelism_is_bounded_in_inner_build(self):
+        model = self._model(
+            {"sonicde/a": {"buildsystem": "cmake", "git": {}}}, [], ["sonicde/a"])
+        out = self.root / "out.cmake"
+        generate_cmake(model, out, staging_root=self.root / "stage", jobs=3)
+        text = out.read_text()
+        self.assertIn("--build <BINARY_DIR> --parallel 3 --target install", text)
+
+    def test_invalid_parallelism_is_rejected(self):
+        model = self._model(
+            {"sonicde/a": {"buildsystem": "cmake", "git": {}}}, [], ["sonicde/a"])
+        with self.assertRaisesRegex(ValueError, "positive"):
+            generate_cmake(model, self.root / "out.cmake", jobs=0)
+
 
 class TestCMakeIntegration(unittest.TestCase):
     """Integration test: fixture prerequisite + consumer via ExternalProject."""

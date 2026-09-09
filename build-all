@@ -10,13 +10,14 @@ INSTALL_PREFIX=/usr
 PREFIX_SET=false
 CONFIG_ARGS=()
 BUILD_ARGS=()
+JOBS="${SONICDE_BUILD_JOBS:-}"
 usage() {
     cat <<'EOF'
 Usage: ./build-all [--install] [--install-prefix PATH] [build options]
 
   --install               Install to the system only after the full build succeeds.
   --install-prefix PATH   System prefix (default /usr); requires --install.
-  --parallel N, -j N      Parallel build jobs.
+  --parallel N, -j N      Maximum concurrent compiler jobs inside one package.
   --verbose, -v          Verbose build output.
   --clean-first          Clean before building.
   -solution-define K=V    Configuration override.
@@ -39,7 +40,7 @@ while (($#)); do
             INSTALL_PREFIX="$2"; PREFIX_SET=true; shift 2 ;;
         --parallel|-j)
             [[ $# -ge 2 && "$2" =~ ^[1-9][0-9]*$ ]] || { echo "$1 requires a positive job count" >&2; exit 2; }
-            BUILD_ARGS+=(--parallel "$2"); shift 2 ;;
+            JOBS="$2"; shift 2 ;;
         --verbose|-v|--clean-first) BUILD_ARGS+=("$1"); shift ;;
         -solution-define|-project-define)
             [[ $# -ge 2 && "$2" == *=* ]] || { echo "$1 requires K=V" >&2; exit 2; }
@@ -48,11 +49,39 @@ while (($#)); do
         *) echo "Unsupported option: $1 (use --help)" >&2; exit 2 ;;
     esac
 done
+if [[ -n "$JOBS" && ! "$JOBS" =~ ^[1-9][0-9]*$ ]]; then
+    echo "SONICDE_BUILD_JOBS/--parallel must be a positive job count" >&2
+    exit 2
+fi
+if [[ -z "$JOBS" ]]; then
+    JOBS="$(python3 -c '
+import os
+from pathlib import Path
+available = 0
+try:
+    for line in Path("/proc/meminfo").read_text().splitlines():
+        if line.startswith("MemAvailable:"):
+            available = int(line.split()[1]) * 1024
+            break
+except OSError:
+    pass
+try:
+    limit = Path("/sys/fs/cgroup/memory.max").read_text().strip()
+    current = int(Path("/sys/fs/cgroup/memory.current").read_text())
+    if limit != "max":
+        available = min(available or int(limit), max(0, int(limit) - current))
+except (OSError, ValueError):
+    pass
+usable = max(0, available - 1024**3)
+memory_jobs = max(1, usable // (2 * 1024**3))
+print(max(1, min(os.cpu_count() or 1, memory_jobs, 8)))
+')"
+fi
 if [[ "$PREFIX_SET" == true && "$INSTALL" != true ]]; then
     echo "--install-prefix requires --install" >&2
     exit 2
 fi
-GENERATE_ARGS=()
+GENERATE_ARGS=(--jobs "$JOBS")
 if [[ "$INSTALL" == true ]]; then
     [[ "$INSTALL_PREFIX" == /* && "$INSTALL_PREFIX" != *';'* && "$INSTALL_PREFIX" != *$'\n'* ]] || {
         echo "--install-prefix must be an absolute path without semicolons or newlines" >&2; exit 2;
@@ -76,13 +105,14 @@ python3 scripts/check_sources.py -model state/model.json
 python3 scripts/validate.py -model state/model.json
 
 # Generate CMake superbuild
+echo "Package build parallelism: $JOBS job(s); meta-build package scheduling: serial"
 python3 scripts/generate.py -model state/model.json "${GENERATE_ARGS[@]}"
 
 # Configure parent (includes Qt6 Core probe)
 cmake -B build -S . -G Ninja
 
 # Build everything
-cmake --build build "${BUILD_ARGS[@]}"
+cmake --build build --parallel 1 "${BUILD_ARGS[@]}"
 
 # set -e above is the deployment barrier: a failed configure/build never reaches
 # this phase. Do not move this into a per-package ExternalProject step.

@@ -36,7 +36,8 @@ def wrapper(tmp_path):
             "    sys.exit(8)\n"
         )
         executable.chmod(0o755)
-    env = {**os.environ, "PATH": f"{binaries}:{os.environ['PATH']}", "COMMAND_LOG": str(log)}
+    env = {**os.environ, "PATH": f"{binaries}:{os.environ['PATH']}", "COMMAND_LOG": str(log),
+           "SONICDE_BUILD_JOBS": "2"}
 
     def invoke(*args, fail=False, fail_auth=False, fail_step=None):
         log.unlink(missing_ok=True)
@@ -53,7 +54,7 @@ def wrapper(tmp_path):
 def test_install_only_after_full_build(wrapper):
     result, calls = wrapper("--install", "--parallel", "3")
     assert result.returncode == 0, result.stderr
-    assert calls[-3] == ["cmake", "--build", "build", "--parallel", "3"]
+    assert calls[-3] == ["cmake", "--build", "build", "--parallel", "1"]
     assert calls[-2] == ["sudo", "-v"]
     assert calls[-1][:3] == ["sudo", "--", "python3"]
     assert calls[-1][3].endswith("/scripts/install.py")
@@ -63,6 +64,7 @@ def test_install_only_after_full_build(wrapper):
     assert calls[1] == ["python3", "scripts/check_sources.py", "-model", "state/model.json"]
     assert calls[2] == ["python3", "scripts/validate.py", "-model", "state/model.json"]
     assert "--staging-root" in calls[3]
+    assert calls[3][calls[3].index("--jobs") + 1] == "3"
     assert all("--install" not in call for call in calls)
 
 
@@ -76,7 +78,7 @@ def test_failed_build_never_deploys(wrapper):
 def test_failed_authentication_never_installs(wrapper):
     result, calls = wrapper("--install", fail_auth=True)
     assert result.returncode == 9
-    assert calls[-2] == ["cmake", "--build", "build"]
+    assert calls[-2] == ["cmake", "--build", "build", "--parallel", "1"]
     assert calls[-1] == ["sudo", "-v"]
     assert not any(any(arg.endswith("scripts/install.py") for arg in call) for call in calls)
 
@@ -84,11 +86,13 @@ def test_failed_authentication_never_installs(wrapper):
 def test_default_does_not_deploy_or_change_prefix(wrapper):
     result, calls = wrapper("--verbose")
     assert result.returncode == 0
-    assert calls[-1] == ["cmake", "--build", "build", "--verbose"]
+    assert calls[-1] == ["cmake", "--build", "build", "--parallel", "1", "--verbose"]
     assert not any(call[0] == "sudo" for call in calls)
     assert not any("--staging-root" in call or "scripts/install.py" in call for call in calls)
     assert not any(arg.startswith("install-prefix=") for call in calls for arg in call)
     assert not any("scripts/fetch.py" in call for call in calls)
+    generate = next(call for call in calls if "scripts/generate.py" in call)
+    assert generate[generate.index("--jobs") + 1] == "2"
 
 
 def test_source_failure_stops_before_cmake_or_sudo(wrapper):

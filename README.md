@@ -71,6 +71,12 @@ Build into the solution's local prefix (the default remains `build/`):
 
     ./build-all --parallel 8
 
+The meta-build schedules one package at a time so nested Ninja processes cannot
+multiply the requested concurrency. `--parallel N` controls compilation inside
+that package. Without it, the builder chooses a conservative value from available
+memory (roughly one job per 2 GiB after reserving 1 GiB, capped at eight). Set
+`SONICDE_BUILD_JOBS=N` for a persistent override.
+
 Build the full meta-build, then install its CMake packages to `/usr`:
 
     ./build-all --install --parallel 8
