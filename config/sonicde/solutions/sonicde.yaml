@@ -3,9 +3,9 @@
 # supplied by the operating system and is deliberately not fetched or built by
 # this solution.
 
-sonicde_git: git@github.com:Sonic-DE
+sonicde_git: https://github.com/Sonic-DE
 xlibre_git: https://github.com/X11Libre
-ossqm_git: git@github.com:oss-qm
+ossqm_git: https://github.com/oss-qm
 
 kde_git: https://invent.kde.org/
 
