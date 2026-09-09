@@ -44,6 +44,15 @@ def test_cmake_package_probe_accepts_and_rejects_configs(capsys):
     assert "missing CMake package" in output.err
 
 
+def test_cmake_probe_supplies_find_dependency_context(tmp_path, monkeypatch):
+    package = tmp_path / "lib/cmake/FixtureDependency"
+    package.mkdir(parents=True)
+    (package / "FixtureDependencyConfig.cmake").write_text(
+        "find_dependency(Qt6Core)\nset(FixtureDependency_FOUND TRUE)\n")
+    monkeypatch.setenv("CMAKE_PREFIX_PATH", str(tmp_path))
+    assert validate_cmake_packages("fixture", ["FixtureDependency"]) == 0
+
+
 def test_cmake_package_alternatives_accept_first_available(capsys):
     assert validate_cmake_package_alternatives(
         "fixture", ["SonicDEMissingCMakePackage12345", "Qt6Core"]) == 0
