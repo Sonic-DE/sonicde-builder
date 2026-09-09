@@ -57,6 +57,39 @@ def validate_commands(pkg_name: str, commands: list[str]) -> int:
     return errors
 
 
+def validate_headers(pkg_name: str, headers: list[str]) -> int:
+    roots = [Path("/usr/include"), Path("/usr/local/include")]
+    roots.extend(Path(path) for path in os.environ.get("CPATH", "").split(":") if path)
+    errors = 0
+    for header in headers:
+        found = next((root / header for root in roots if (root / header).is_file()), None)
+        if found is None:
+            print(f"[{pkg_name}] missing header: {header}", file=sys.stderr)
+            errors += 1
+        else:
+            print(f"[{pkg_name}] header: {header}: {found}")
+    return errors
+
+
+def validate_cmake_packages(pkg_name: str, packages: list[str]) -> int:
+    errors = 0
+    for package in packages:
+        with tempfile.TemporaryDirectory(prefix="sonicde-cmake-probe-") as temporary:
+            root = Path(temporary)
+            (root / "CMakeLists.txt").write_text(
+                "cmake_minimum_required(VERSION 3.28)\n"
+                "project(SonicDECMakeProbe LANGUAGES CXX)\n"
+                f"find_package({package} CONFIG REQUIRED)\n")
+            result = subprocess.run(["cmake", "-S", str(root), "-B", str(root / "build")],
+                                    capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"[{pkg_name}] missing CMake package: {package}", file=sys.stderr)
+            errors += 1
+        else:
+            print(f"[{pkg_name}] CMake package: {package}")
+    return errors
+
+
 def validate_system_packages(model: dict) -> int:
     """Validate all active system packages."""
     errors = 0
@@ -75,6 +108,14 @@ def validate_system_packages(model: dict) -> int:
         if isinstance(commands, str):
             commands = [commands]
         errors += validate_commands(name, commands)
+        headers = pkg.get("headers") or []
+        if isinstance(headers, str):
+            headers = [headers]
+        errors += validate_headers(name, headers)
+        cmake_packages = pkg.get("cmake_packages") or []
+        if isinstance(cmake_packages, str):
+            cmake_packages = [cmake_packages]
+        errors += validate_cmake_packages(name, cmake_packages)
     return errors
 
 

@@ -26,6 +26,8 @@ buildsystem: cmake
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/libx11
+    - os-installed/libxcb
 
 depends:
     - sonicde/sonic-frameworks-core-addons

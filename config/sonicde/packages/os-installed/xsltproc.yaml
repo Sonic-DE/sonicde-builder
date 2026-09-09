@@ -1,0 +1,7 @@
+provides: sys/xsltproc
+type: system
+commands: xsltproc
+platform-packages:
+    debian: xsltproc
+    devuan: xsltproc
+    arch: libxslt

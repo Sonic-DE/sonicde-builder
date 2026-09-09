@@ -30,3 +30,4 @@ build-depends:
     - os-installed/python3-build
     - os-installed/python3-setuptools
     - os-installed/python3-wheel
+    - os-installed/libmount

@@ -1,0 +1,7 @@
+provides: sys/sdl3
+type: system
+pkg-config: sdl3
+platform-packages:
+    debian: libsdl3-dev
+    devuan: libsdl3-dev
+    arch: sdl3

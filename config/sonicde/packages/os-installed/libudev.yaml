@@ -1,0 +1,7 @@
+provides: sys/libudev
+type: system
+pkg-config: libudev
+platform-packages:
+    debian: libudev-dev
+    devuan: libudev-dev
+    arch: systemd-libs

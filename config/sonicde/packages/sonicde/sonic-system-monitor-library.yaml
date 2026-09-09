@@ -26,6 +26,8 @@ buildsystem: cmake
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/libdrm
+    - os-installed/zlib
 
 depends:
     - sonicde/sonic-frameworks-addons-downloader

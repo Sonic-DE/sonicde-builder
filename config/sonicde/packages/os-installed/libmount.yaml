@@ -1,0 +1,7 @@
+provides: sys/libmount
+type: system
+pkg-config: mount
+platform-packages:
+    debian: libmount-dev
+    devuan: libmount-dev
+    arch: util-linux

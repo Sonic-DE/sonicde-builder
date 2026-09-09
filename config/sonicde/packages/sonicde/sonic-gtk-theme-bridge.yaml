@@ -27,6 +27,7 @@ buildsystem: cmake
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
     - os-installed/sassc
+    - os-installed/glib-compile-schemas
 
 depends:
     - sonicde/sonic-silver-gtk

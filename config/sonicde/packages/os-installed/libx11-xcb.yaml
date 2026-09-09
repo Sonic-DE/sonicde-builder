@@ -1,0 +1,7 @@
+provides: sys/libx11-xcb
+type: system
+pkg-config: x11-xcb
+platform-packages:
+    debian: libx11-xcb-dev
+    devuan: libx11-xcb-dev
+    arch: libx11

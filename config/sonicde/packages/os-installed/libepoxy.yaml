@@ -1,0 +1,7 @@
+provides: sys/libepoxy
+type: system
+pkg-config: epoxy
+platform-packages:
+    debian: libepoxy-dev
+    devuan: libepoxy-dev
+    arch: libepoxy

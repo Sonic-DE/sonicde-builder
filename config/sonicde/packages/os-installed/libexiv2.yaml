@@ -1,0 +1,7 @@
+provides: sys/libexiv2
+type: system
+pkg-config: exiv2
+platform-packages:
+    debian: libexiv2-dev
+    devuan: libexiv2-dev
+    arch: exiv2

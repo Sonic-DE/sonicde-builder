@@ -49,6 +49,8 @@ depends:
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/libx11
+    - os-installed/libxcb
 
 cmake-extra-args:
     - -DBUILD_KCM_TABLET=OFF

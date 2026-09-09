@@ -26,5 +26,6 @@ buildsystem: cmake
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/kdsoap-ws-discovery
     - sonicde/sonic-frameworks-doctools
     - sys/libproxy

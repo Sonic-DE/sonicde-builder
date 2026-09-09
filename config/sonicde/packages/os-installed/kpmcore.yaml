@@ -1,0 +1,7 @@
+provides: sys/kpmcore
+type: system
+cmake-packages: KPMcore
+platform-packages:
+    debian: libkpmcore-dev
+    devuan: libkpmcore-dev
+    arch: kpmcore

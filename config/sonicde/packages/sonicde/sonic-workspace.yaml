@@ -44,3 +44,5 @@ depends:
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/libudev
+    - os-installed/libxcb

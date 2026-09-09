@@ -1,0 +1,7 @@
+provides: sys/qt6keychain
+type: system
+cmake-packages: Qt6Keychain
+platform-packages:
+    debian: qtkeychain-qt6-dev
+    devuan: qtkeychain-qt6-dev
+    arch: qtkeychain-qt6

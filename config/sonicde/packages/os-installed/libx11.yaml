@@ -1,0 +1,7 @@
+provides: sys/libx11
+type: system
+pkg-config: x11
+platform-packages:
+    debian: libx11-dev
+    devuan: libx11-dev
+    arch: libx11

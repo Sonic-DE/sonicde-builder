@@ -26,6 +26,7 @@ buildsystem: cmake
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/kpmcore
 
 depends:
     - sonicde/sonic-frameworks-core-addons

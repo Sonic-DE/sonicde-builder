@@ -1,0 +1,7 @@
+provides: sys/libxcb
+type: system
+pkg-config: xcb
+platform-packages:
+    debian: libxcb1-dev
+    devuan: libxcb1-dev
+    arch: libxcb

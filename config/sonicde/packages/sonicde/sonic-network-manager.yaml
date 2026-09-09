@@ -26,3 +26,5 @@ buildsystem: cmake
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/libssl
+    - os-installed/qt6keychain

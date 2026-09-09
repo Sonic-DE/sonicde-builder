@@ -1,0 +1,7 @@
+provides: sys/libegl
+type: system
+pkg-config: egl
+platform-packages:
+    debian: libegl-dev
+    devuan: libegl-dev
+    arch: libglvnd

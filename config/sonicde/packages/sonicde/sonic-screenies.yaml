@@ -26,6 +26,12 @@ buildsystem: cmake
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/opencv4
+    - os-installed/libpulse
+    - os-installed/libxcb
+    - os-installed/libavcodec
+    - os-installed/libavfilter
+    - os-installed/libavformat
 
 depends:
     - sonicde/sonic-frameworks-barcode

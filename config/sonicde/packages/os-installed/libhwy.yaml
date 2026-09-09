@@ -1,0 +1,7 @@
+provides: sys/libhwy
+type: system
+pkg-config: libhwy
+platform-packages:
+    debian: libhwy-dev
+    devuan: libhwy-dev
+    arch: highway

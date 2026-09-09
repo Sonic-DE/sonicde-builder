@@ -1,0 +1,7 @@
+provides: sys/gettext
+type: system
+commands: msgfmt
+platform-packages:
+    debian: gettext
+    devuan: gettext
+    arch: gettext

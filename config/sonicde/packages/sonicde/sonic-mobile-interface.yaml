@@ -26,6 +26,9 @@ buildsystem: cmake
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/libudev
+    - os-installed/libepoxy
+    - os-installed/libxcb
 
 depends:
     - sonicde/sonic-frameworks-modemmanager

@@ -1,0 +1,7 @@
+provides: sys/icu
+type: system
+pkg-config: icu-uc
+platform-packages:
+    debian: libicu-dev
+    devuan: libicu-dev
+    arch: icu

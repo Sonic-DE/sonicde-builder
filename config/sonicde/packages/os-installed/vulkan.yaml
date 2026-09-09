@@ -1,0 +1,7 @@
+provides: sys/vulkan
+type: system
+pkg-config: vulkan
+platform-packages:
+    debian: libvulkan-dev
+    devuan: libvulkan-dev
+    arch: vulkan-headers

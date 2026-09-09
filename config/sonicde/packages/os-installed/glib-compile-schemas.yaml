@@ -1,0 +1,7 @@
+provides: sys/glib-compile-schemas
+type: system
+commands: glib-compile-schemas
+platform-packages:
+    debian: libglib2.0-bin
+    devuan: libglib2.0-bin
+    arch: glib2

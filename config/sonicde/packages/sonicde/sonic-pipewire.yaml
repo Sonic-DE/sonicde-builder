@@ -26,6 +26,9 @@ buildsystem: cmake
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/libegl
+    - os-installed/libepoxy
+    - os-installed/libdrm
 
 depends:
     - os-installed/libva

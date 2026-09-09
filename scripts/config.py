@@ -26,7 +26,7 @@ import yaml
 
 PACKAGE_FIELDS = {
     "sources", "buildsystem", "build-depends", "depends", "provides",
-    "type", "pkg-config", "python-modules", "commands", "platform-packages", "cmake-extra-args",
+    "type", "pkg-config", "python-modules", "commands", "headers", "cmake-packages", "platform-packages", "cmake-extra-args",
     "master_branch", "ref", "name", "@filename", "@basename", "@slug",
     "@PROJECT", "@SOLUTION", "source-dir", "install-prefix", "parallel",
     "@statdir", "@builddir", "@destdir", "@binary-tarball", "@binary-image",
@@ -180,6 +180,8 @@ class Package:
     pkg_config: list[str] = field(default_factory=list)
     python_modules: list[str] = field(default_factory=list)
     commands: list[str] = field(default_factory=list)
+    headers: list[str] = field(default_factory=list)
+    cmake_packages: list[str] = field(default_factory=list)
     platform_packages: dict[str, str] = field(default_factory=dict)
     cmake_extra_args: list[str] = field(default_factory=list)
     git: GitSpec | None = None
@@ -374,6 +376,12 @@ class Project:
         commands = r.get("commands") or []
         if isinstance(commands, str): commands = [commands]
         pkg.commands = list(commands)
+        headers = r.get("headers") or []
+        if isinstance(headers, str): headers = [headers]
+        pkg.headers = list(headers)
+        cmake_packages = r.get("cmake-packages") or []
+        if isinstance(cmake_packages, str): cmake_packages = [cmake_packages]
+        pkg.cmake_packages = list(cmake_packages)
         pp = r.get("platform-packages") or {}
         if isinstance(pp, dict):
             pkg.platform_packages = {str(k): str(v) for k, v in pp.items()}
@@ -632,6 +640,8 @@ class Project:
                 "pkg_config": pkg.pkg_config,
                 "python_modules": pkg.python_modules,
                 "commands": pkg.commands,
+                "headers": pkg.headers,
+                "cmake_packages": pkg.cmake_packages,
                 "platform_packages": pkg.platform_packages,
                 "cmake_extra_args": pkg.cmake_extra_args,
                 "reasons": cl.reasons.get(ident, []),

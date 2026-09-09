@@ -31,3 +31,4 @@ cmake-extra-args:
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/libssl
