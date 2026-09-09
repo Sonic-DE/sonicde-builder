@@ -30,6 +30,20 @@ def validate_pkg_config(pkg_name: str, modules: list[str]) -> int:
     return errors
 
 
+def validate_python_modules(pkg_name: str, modules: list[str]) -> int:
+    """Import required Python build modules using the active python3."""
+    errors = 0
+    for module in modules:
+        result = subprocess.run([sys.executable, "-c", f"import {module}"],
+                                capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"[{pkg_name}] missing Python module: {module}", file=sys.stderr)
+            errors += 1
+        else:
+            print(f"[{pkg_name}] Python module: {module}")
+    return errors
+
+
 def validate_system_packages(model: dict) -> int:
     """Validate all active system packages."""
     errors = 0
@@ -40,6 +54,10 @@ def validate_system_packages(model: dict) -> int:
         if isinstance(modules, str):
             modules = [modules]
         errors += validate_pkg_config(name, modules)
+        python_modules = pkg.get("python_modules") or []
+        if isinstance(python_modules, str):
+            python_modules = [python_modules]
+        errors += validate_python_modules(name, python_modules)
     return errors
 
 

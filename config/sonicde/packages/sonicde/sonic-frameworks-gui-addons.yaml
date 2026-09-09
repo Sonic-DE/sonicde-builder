@@ -26,6 +26,7 @@ buildsystem: cmake
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
-
-depends:
     - sonicde/sonic-pyside-setup
+    - os-installed/python3-build
+    - os-installed/python3-setuptools
+    - os-installed/python3-wheel

@@ -1,6 +1,8 @@
 provides: sys/python3-build
 type: system
+python-modules: build
 
 platform-packages:
     debian: python3-build
     devuan: python3-build
+    arch: python-build

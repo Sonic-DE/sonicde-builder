@@ -1,0 +1,8 @@
+provides: sys/python3-wheel
+type: system
+python-modules: wheel
+
+platform-packages:
+    debian: python3-wheel
+    devuan: python3-wheel
+    arch: python-wheel

@@ -77,6 +77,21 @@ class TestConfigParsing(unittest.TestCase):
         cl = prj.build_closure()
         self.assertIn("sonicde/foo", cl.packages)
 
+    def test_python_modules_are_serialized_for_validation(self):
+        pdir = self.root / "pkgs"
+        self._make_pkg(pdir, "os-installed/python-backend", type="system",
+                       **{"python-modules": ["setuptools.build_meta", "wheel"],
+                          "platform-packages": {"arch": "python-setuptools", "debian": "python3-setuptools"}})
+        sol = self._make_solution(pdir, build=["os-installed/python-backend"])
+        project = Project(self.root, sol)
+        project.load()
+        closure = project.build_closure()
+        model = project.to_model(closure)
+        self.assertEqual(model["packages"]["os-installed/python-backend"]["python_modules"],
+                         ["setuptools.build_meta", "wheel"])
+        self.assertEqual(model["packages"]["os-installed/python-backend"]["platform_packages"]["arch"],
+                         "python-setuptools")
+
     def test_provides_resolution(self):
         """Unique provides entry resolves when no exact match."""
         pdir = self.root / "pkgs"

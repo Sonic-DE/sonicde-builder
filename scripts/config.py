@@ -26,7 +26,7 @@ import yaml
 
 PACKAGE_FIELDS = {
     "sources", "buildsystem", "build-depends", "depends", "provides",
-    "type", "pkg-config", "platform-packages", "cmake-extra-args",
+    "type", "pkg-config", "python-modules", "platform-packages", "cmake-extra-args",
     "master_branch", "ref", "name", "@filename", "@basename", "@slug",
     "@PROJECT", "@SOLUTION", "source-dir", "install-prefix", "parallel",
     "@statdir", "@builddir", "@destdir", "@binary-tarball", "@binary-image",
@@ -178,6 +178,7 @@ class Package:
     build_depends: list[str] = field(default_factory=list)
     provides: list[str] = field(default_factory=list)
     pkg_config: list[str] = field(default_factory=list)
+    python_modules: list[str] = field(default_factory=list)
     platform_packages: dict[str, str] = field(default_factory=dict)
     cmake_extra_args: list[str] = field(default_factory=list)
     git: GitSpec | None = None
@@ -366,6 +367,9 @@ class Project:
         pc = r.get("pkg-config") or []
         if isinstance(pc, str): pc = [pc]
         pkg.pkg_config = list(pc)
+        py_modules = r.get("python-modules") or []
+        if isinstance(py_modules, str): py_modules = [py_modules]
+        pkg.python_modules = list(py_modules)
         pp = r.get("platform-packages") or {}
         if isinstance(pp, dict):
             pkg.platform_packages = {str(k): str(v) for k, v in pp.items()}
@@ -622,6 +626,8 @@ class Project:
                 "build_depends": pkg.build_depends,
                 "provides": pkg.provides,
                 "pkg_config": pkg.pkg_config,
+                "python_modules": pkg.python_modules,
+                "platform_packages": pkg.platform_packages,
                 "cmake_extra_args": pkg.cmake_extra_args,
                 "reasons": cl.reasons.get(ident, []),
             }
