@@ -79,8 +79,8 @@ Select a different final destination with:
 
     ./build-all --install --install-prefix /opt/sonicde --parallel 8
 
-With `--install`, packages are configured for the final destination, but their
-dependency installations during the build are redirected through `DESTDIR` to
+With `--install`, packages are configured for the final destination, while every
+dependency installation during the build is redirected with `DESTDIR` under
 `state/install-stage/`. Later packages discover these staged dependencies.
 **No live-system installation starts until the entire meta-build succeeds.**
 If validation, configuration or any build fails, deployment is not run.
@@ -96,13 +96,11 @@ the deployment-only step from the workspace:
     sudo -v
     sudo -- python3 scripts/install.py -model state/model.json
 
-Use that helper only with the model from the completed system-prefix build.
-It checks all package installation scripts and configured prefixes before
-starting, skips system/no-build packages, and stops on the first install error.
+Use that helper only with the model from the completed system-prefix build. It
+checks all package installation scripts and configured prefixes before starting,
+skips system/no-build packages, and stops on the first deployment error.
 Deployment is not transactional: an install failure can leave earlier packages
 installed, although no packages are deployed while the meta-build is incomplete.
-For scratch staging, invoke the helper directly with `DESTDIR` set; the sudo
-wrapper does not forward that environment variable into system installation.
 
 architecture:
 -------------

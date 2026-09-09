@@ -110,6 +110,69 @@ def test_staged_tool_finds_staged_xdg_data(tmp_path):
     assert (stage / "usr/share/consumer/payload.txt").is_file()
 
 
+def test_staged_exported_target_resolves_to_staged_library(tmp_path):
+    src = tmp_path / "src"
+    prereq = src / "prereq"
+    consumer = src / "consumer"
+    prereq.mkdir(parents=True)
+    consumer.mkdir(parents=True)
+    (prereq / "fixture.c").write_text("int fixture(void) { return 7; }\n")
+    (prereq / "FixtureConfig.cmake").write_text("include(${CMAKE_CURRENT_LIST_DIR}/FixtureTargets.cmake)\n")
+    (prereq / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(Prereq C)\n"
+        "add_library(fixture SHARED fixture.c)\n"
+        "install(TARGETS fixture EXPORT FixtureTargets LIBRARY DESTINATION lib)\n"
+        "install(EXPORT FixtureTargets NAMESPACE Fixture:: DESTINATION lib/cmake/Fixture)\n"
+        "install(FILES FixtureConfig.cmake DESTINATION lib/cmake/Fixture)\n")
+    (consumer / "main.c").write_text("int fixture(void); int main(void) { return fixture() != 7; }\n")
+    (consumer / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(Consumer C)\n"
+        "find_package(Fixture CONFIG REQUIRED)\n"
+        "add_executable(consumer main.c)\ntarget_link_libraries(consumer PRIVATE Fixture::fixture)\n"
+        "install(TARGETS consumer RUNTIME DESTINATION bin)\n")
+    stage = tmp_path / "stage"
+    package_builds = tmp_path / "package-builds"
+    model = {"packages": {"prereq": {"buildsystem": "cmake"}, "consumer": {"buildsystem": "cmake"}},
+             "topo_order": ["prereq", "consumer"],
+             "edges": [{"dependent": "consumer", "prerequisite": "prereq", "kind": "depends"}],
+             "source_root": str(src), "build_dir": str(package_builds), "install_prefix": "/usr"}
+    generate_cmake(model, tmp_path / "SonicDEProjects.cmake", staging_root=stage)
+    (tmp_path / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(Meta NONE)\ninclude(SonicDEProjects.cmake)\n")
+    subprocess.run(["cmake", "-S", str(tmp_path), "-B", str(tmp_path / "meta"), "-G", "Ninja"],
+                   check=True, capture_output=True)
+    subprocess.run(["cmake", "--build", str(tmp_path / "meta")], check=True, capture_output=True)
+    assert (stage / "usr/lib/libfixture.so").is_file()
+    assert (stage / "usr/bin/consumer").is_file()
+    targets = (stage / "usr/lib/cmake/Fixture/FixtureTargets-noconfig.cmake").read_text()
+    assert '"${_IMPORT_PREFIX}/lib/libfixture.so"' in targets
+    assert '"/usr/lib/libfixture.so"' not in targets
+
+
+def test_absolute_install_destination_is_redirected_before_full_build(tmp_path):
+    src = tmp_path / "src/pkg"
+    src.mkdir(parents=True)
+    final_prefix = tmp_path / "final"
+    stage = tmp_path / "stage"
+    build_root = tmp_path / "packages"
+    (src / "payload.py").write_text("value = 1\n")
+    (src / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(AbsoluteInstall NONE)\n"
+        "install(FILES payload.py DESTINATION \"${CMAKE_INSTALL_PREFIX}/lib/python3.14/site-packages/fixture\")\n")
+    model = {"packages": {"pkg": {"buildsystem": "cmake"}}, "topo_order": ["pkg"], "edges": [],
+             "source_root": str(tmp_path / "src"), "build_dir": str(build_root),
+             "install_prefix": str(final_prefix)}
+    generate_cmake(model, tmp_path / "SonicDEProjects.cmake", staging_root=stage)
+    (tmp_path / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(Meta NONE)\ninclude(SonicDEProjects.cmake)\n")
+    subprocess.run(["cmake", "-S", str(tmp_path), "-B", str(tmp_path / "meta"), "-G", "Ninja"],
+                   check=True, capture_output=True)
+    subprocess.run(["cmake", "--build", str(tmp_path / "meta")], check=True, capture_output=True)
+    relative_prefix = final_prefix.relative_to("/")
+    assert (stage / relative_prefix / "lib/python3.14/site-packages/fixture/payload.py").is_file()
+    assert not final_prefix.exists()
+
+
 def test_preflight_checks_all_packages_before_install(tmp_path, monkeypatch):
     first = tmp_path / "first"
     first.mkdir()

@@ -103,8 +103,8 @@ def generate_cmake(model: dict, out_file: Path, staging_root: Path | None = None
         configure_cmd = None
         if staging_root is not None:
             # ExternalProject configure and build run in separate processes;
-            # supply staged discovery paths to both, without leaking DESTDIR
-            # into the later, explicit system deployment process.
+            # supply staged discovery paths to both. DESTDIR redirects every
+            # install destination, including absolute Python site-package paths.
             staged_env = (
                 f'"PATH={search_prefix}/bin:$ENV{{PATH}}" '
                 f'"PKG_CONFIG_PATH={search_prefix}/lib64/pkgconfig:{search_prefix}/lib/pkgconfig:'

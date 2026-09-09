@@ -24,5 +24,10 @@ master_branch: master
 
 buildsystem: cmake
 
+cmake-extra-args:
+    # QCA otherwise caches absolute /usr paths in its exported targets, which
+    # cannot be consumed from the private pre-install staging tree.
+    - -DUSE_RELATIVE_PATHS=ON
+
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
