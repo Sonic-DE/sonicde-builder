@@ -84,6 +84,7 @@ class TestConfigParsing(unittest.TestCase):
                           "commands": ["sassc"],
                           "headers": ["boost/version.hpp"],
                           "cmake-packages": ["Qt6Keychain"],
+                          "cmake-packages-any": ["OpenCV 5", "OpenCV 4.7"],
                           "platform-packages": {"arch": "python-setuptools", "debian": "python3-setuptools"}})
         sol = self._make_solution(pdir, build=["os-installed/python-backend"])
         project = Project(self.root, sol)
@@ -97,6 +98,8 @@ class TestConfigParsing(unittest.TestCase):
         self.assertEqual(model["packages"]["os-installed/python-backend"]["commands"], ["sassc"])
         self.assertEqual(model["packages"]["os-installed/python-backend"]["headers"], ["boost/version.hpp"])
         self.assertEqual(model["packages"]["os-installed/python-backend"]["cmake_packages"], ["Qt6Keychain"])
+        self.assertEqual(model["packages"]["os-installed/python-backend"]["cmake_packages_any"],
+                         ["OpenCV 5", "OpenCV 4.7"])
 
     def test_provides_resolution(self):
         """Unique provides entry resolves when no exact match."""

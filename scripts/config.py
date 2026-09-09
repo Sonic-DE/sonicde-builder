@@ -26,7 +26,7 @@ import yaml
 
 PACKAGE_FIELDS = {
     "sources", "buildsystem", "build-depends", "depends", "provides",
-    "type", "pkg-config", "python-modules", "commands", "headers", "cmake-packages", "platform-packages", "cmake-extra-args",
+    "type", "pkg-config", "python-modules", "commands", "headers", "cmake-packages", "cmake-packages-any", "platform-packages", "cmake-extra-args",
     "master_branch", "ref", "name", "@filename", "@basename", "@slug",
     "@PROJECT", "@SOLUTION", "source-dir", "install-prefix", "parallel",
     "@statdir", "@builddir", "@destdir", "@binary-tarball", "@binary-image",
@@ -182,6 +182,7 @@ class Package:
     commands: list[str] = field(default_factory=list)
     headers: list[str] = field(default_factory=list)
     cmake_packages: list[str] = field(default_factory=list)
+    cmake_packages_any: list[str] = field(default_factory=list)
     platform_packages: dict[str, str] = field(default_factory=dict)
     cmake_extra_args: list[str] = field(default_factory=list)
     git: GitSpec | None = None
@@ -382,6 +383,9 @@ class Project:
         cmake_packages = r.get("cmake-packages") or []
         if isinstance(cmake_packages, str): cmake_packages = [cmake_packages]
         pkg.cmake_packages = list(cmake_packages)
+        cmake_packages_any = r.get("cmake-packages-any") or []
+        if isinstance(cmake_packages_any, str): cmake_packages_any = [cmake_packages_any]
+        pkg.cmake_packages_any = list(cmake_packages_any)
         pp = r.get("platform-packages") or {}
         if isinstance(pp, dict):
             pkg.platform_packages = {str(k): str(v) for k, v in pp.items()}
@@ -642,6 +646,7 @@ class Project:
                 "commands": pkg.commands,
                 "headers": pkg.headers,
                 "cmake_packages": pkg.cmake_packages,
+                "cmake_packages_any": pkg.cmake_packages_any,
                 "platform_packages": pkg.platform_packages,
                 "cmake_extra_args": pkg.cmake_extra_args,
                 "reasons": cl.reasons.get(ident, []),

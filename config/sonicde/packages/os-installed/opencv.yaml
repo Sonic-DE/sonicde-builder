@@ -1,0 +1,9 @@
+provides: sys/opencv
+type: system
+cmake-packages-any:
+    - OpenCV 5 COMPONENTS core imgproc
+    - OpenCV 4.7 COMPONENTS core imgproc
+platform-packages:
+    debian: libopencv-dev
+    devuan: libopencv-dev
+    arch: opencv

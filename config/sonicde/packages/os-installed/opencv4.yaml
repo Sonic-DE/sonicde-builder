@@ -1,7 +1,0 @@
-provides: sys/opencv4
-type: system
-pkg-config: opencv4
-platform-packages:
-    debian: libopencv-dev
-    devuan: libopencv-dev
-    arch: opencv

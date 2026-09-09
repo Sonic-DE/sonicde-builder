@@ -71,24 +71,37 @@ def validate_headers(pkg_name: str, headers: list[str]) -> int:
     return errors
 
 
+def _probe_cmake_package(package_spec: str) -> bool:
+    with tempfile.TemporaryDirectory(prefix="sonicde-cmake-probe-") as temporary:
+        root = Path(temporary)
+        (root / "CMakeLists.txt").write_text(
+            "cmake_minimum_required(VERSION 3.28)\n"
+            "project(SonicDECMakeProbe LANGUAGES CXX)\n"
+            f"find_package({package_spec} CONFIG REQUIRED)\n")
+        result = subprocess.run(["cmake", "-S", str(root), "-B", str(root / "build")],
+                                capture_output=True, text=True)
+    return result.returncode == 0
+
 def validate_cmake_packages(pkg_name: str, packages: list[str]) -> int:
     errors = 0
     for package in packages:
-        with tempfile.TemporaryDirectory(prefix="sonicde-cmake-probe-") as temporary:
-            root = Path(temporary)
-            (root / "CMakeLists.txt").write_text(
-                "cmake_minimum_required(VERSION 3.28)\n"
-                "project(SonicDECMakeProbe LANGUAGES CXX)\n"
-                f"find_package({package} CONFIG REQUIRED)\n")
-            result = subprocess.run(["cmake", "-S", str(root), "-B", str(root / "build")],
-                                    capture_output=True, text=True)
-        if result.returncode != 0:
+        if not _probe_cmake_package(package):
             print(f"[{pkg_name}] missing CMake package: {package}", file=sys.stderr)
             errors += 1
         else:
             print(f"[{pkg_name}] CMake package: {package}")
     return errors
 
+
+def validate_cmake_package_alternatives(pkg_name: str, packages: list[str]) -> int:
+    if not packages:
+        return 0
+    for package in packages:
+        if _probe_cmake_package(package):
+            print(f"[{pkg_name}] CMake package alternative: {package}")
+            return 0
+    print(f"[{pkg_name}] missing all CMake package alternatives: {' OR '.join(packages)}", file=sys.stderr)
+    return 1
 
 def validate_system_packages(model: dict) -> int:
     """Validate all active system packages."""
@@ -116,6 +129,10 @@ def validate_system_packages(model: dict) -> int:
         if isinstance(cmake_packages, str):
             cmake_packages = [cmake_packages]
         errors += validate_cmake_packages(name, cmake_packages)
+        cmake_packages_any = pkg.get("cmake_packages_any") or []
+        if isinstance(cmake_packages_any, str):
+            cmake_packages_any = [cmake_packages_any]
+        errors += validate_cmake_package_alternatives(name, cmake_packages_any)
     return errors
 
 

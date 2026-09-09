@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from validate import validate_cmake_packages, validate_commands, validate_headers, validate_python_modules, validate_system_packages
+from validate import validate_cmake_package_alternatives, validate_cmake_packages, validate_commands, validate_headers, validate_python_modules, validate_system_packages
 
 
 def test_python_module_probe_accepts_importable_module(capsys):
@@ -44,6 +44,16 @@ def test_cmake_package_probe_accepts_and_rejects_configs(capsys):
     assert "missing CMake package" in output.err
 
 
+def test_cmake_package_alternatives_accept_first_available(capsys):
+    assert validate_cmake_package_alternatives(
+        "fixture", ["SonicDEMissingCMakePackage12345", "Qt6Core"]) == 0
+    assert "CMake package alternative: Qt6Core" in capsys.readouterr().out
+
+def test_cmake_package_alternatives_fail_when_all_missing(capsys):
+    assert validate_cmake_package_alternatives(
+        "fixture", ["SonicDEMissingOne12345", "SonicDEMissingTwo12345"]) == 1
+    assert "missing all CMake package alternatives" in capsys.readouterr().err
+
 def test_system_validation_checks_pkg_config_and_python(monkeypatch):
     probed = []
     monkeypatch.setattr("validate.validate_pkg_config", lambda name, modules: probed.append(("pkg", name, modules)) or 0)
@@ -51,13 +61,17 @@ def test_system_validation_checks_pkg_config_and_python(monkeypatch):
     monkeypatch.setattr("validate.validate_commands", lambda name, commands: probed.append(("command", name, commands)) or 0)
     monkeypatch.setattr("validate.validate_headers", lambda name, headers: probed.append(("header", name, headers)) or 0)
     monkeypatch.setattr("validate.validate_cmake_packages", lambda name, packages: probed.append(("cmake", name, packages)) or 0)
+    monkeypatch.setattr("validate.validate_cmake_package_alternatives",
+                        lambda name, packages: probed.append(("cmake-any", name, packages)) or 0)
     model = {"packages": {"os-installed/python": {"type": "system", "pkg_config": [],
                                                     "python_modules": ["setuptools.build_meta"], "commands": ["sassc"],
-                                                    "headers": ["boost/version.hpp"], "cmake_packages": ["Qt6Keychain"]},
+                                                    "headers": ["boost/version.hpp"], "cmake_packages": ["Qt6Keychain"],
+                                                    "cmake_packages_any": ["OpenCV 5", "OpenCV 4.7"]},
                           "source/package": {"type": "", "python_modules": ["ignored"]}}}
     assert validate_system_packages(model) == 0
     assert probed == [("pkg", "os-installed/python", []),
                       ("python", "os-installed/python", ["setuptools.build_meta"]),
                       ("command", "os-installed/python", ["sassc"]),
                       ("header", "os-installed/python", ["boost/version.hpp"]),
-                      ("cmake", "os-installed/python", ["Qt6Keychain"])]
+                      ("cmake", "os-installed/python", ["Qt6Keychain"]),
+                      ("cmake-any", "os-installed/python", ["OpenCV 5", "OpenCV 4.7"])]
