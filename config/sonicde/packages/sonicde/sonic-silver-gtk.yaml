@@ -27,6 +27,7 @@ buildsystem: cmake
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
     - os-installed/python3-cairo
+    - os-installed/sassc
 
 depends:
     - sonicde/sonic-silver

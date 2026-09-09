@@ -81,6 +81,7 @@ class TestConfigParsing(unittest.TestCase):
         pdir = self.root / "pkgs"
         self._make_pkg(pdir, "os-installed/python-backend", type="system",
                        **{"python-modules": ["setuptools.build_meta", "wheel"],
+                          "commands": ["sassc"],
                           "platform-packages": {"arch": "python-setuptools", "debian": "python3-setuptools"}})
         sol = self._make_solution(pdir, build=["os-installed/python-backend"])
         project = Project(self.root, sol)
@@ -91,6 +92,7 @@ class TestConfigParsing(unittest.TestCase):
                          ["setuptools.build_meta", "wheel"])
         self.assertEqual(model["packages"]["os-installed/python-backend"]["platform_packages"]["arch"],
                          "python-setuptools")
+        self.assertEqual(model["packages"]["os-installed/python-backend"]["commands"], ["sassc"])
 
     def test_provides_resolution(self):
         """Unique provides entry resolves when no exact match."""

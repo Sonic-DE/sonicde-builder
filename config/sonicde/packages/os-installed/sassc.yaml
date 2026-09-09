@@ -1,0 +1,8 @@
+provides: sys/sassc
+type: system
+commands: sassc
+
+platform-packages:
+    debian: sassc
+    devuan: sassc
+    arch: sassc

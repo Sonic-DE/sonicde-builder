@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -44,6 +45,18 @@ def validate_python_modules(pkg_name: str, modules: list[str]) -> int:
     return errors
 
 
+def validate_commands(pkg_name: str, commands: list[str]) -> int:
+    errors = 0
+    for command in commands:
+        path = shutil.which(command)
+        if path is None:
+            print(f"[{pkg_name}] missing executable: {command}", file=sys.stderr)
+            errors += 1
+        else:
+            print(f"[{pkg_name}] executable: {command}: {path}")
+    return errors
+
+
 def validate_system_packages(model: dict) -> int:
     """Validate all active system packages."""
     errors = 0
@@ -58,6 +71,10 @@ def validate_system_packages(model: dict) -> int:
         if isinstance(python_modules, str):
             python_modules = [python_modules]
         errors += validate_python_modules(name, python_modules)
+        commands = pkg.get("commands") or []
+        if isinstance(commands, str):
+            commands = [commands]
+        errors += validate_commands(name, commands)
     return errors
 
 
