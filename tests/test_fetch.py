@@ -199,6 +199,103 @@ class TestFetch(unittest.TestCase):
         self.assertNotIn("token", redacted)
         self.assertIn("***", redacted)
 
+    def test_retry_after_failed_initial_fetch_populates_sources(self):
+        """A failed upstream fetch must not strand an empty .git checkout."""
+        origin = self._make_remote("retry-origin")
+        upstream = self._make_remote("retry-upstream")
+        spec = {
+            "ref": "origin/master", "local_branch": "master",
+            "remotes": {"origin": {"url": str(origin)},
+                        "upstream": {"url": str(self.root / "missing.git")}},
+        }
+        model = self._model("sonicde/retry", spec)
+        self.assertEqual(fetch_all(model), 1)
+        dest = self.source_root / "sonicde/retry"
+        self.assertTrue(is_git_repo(dest))
+        self.assertFalse((dest / "file.txt").exists())
+        spec["remotes"]["upstream"]["url"] = str(upstream)
+        self.assertEqual(fetch_all(model), 0)
+        self.assertEqual((dest / "file.txt").read_text(), "test")
+        head = subprocess.run(["git", "rev-parse", "--verify", "HEAD"], cwd=dest,
+                              check=True, capture_output=True, text=True).stdout
+        self.assertEqual(fetch_all(model), 0)
+        self.assertEqual(subprocess.run(["git", "rev-parse", "HEAD"], cwd=dest,
+                                        check=True, capture_output=True, text=True).stdout, head)
+
+    def test_empty_init_can_resume_detached_checkout(self):
+        remote = self._make_remote("detached-retry")
+        dest = self.source_root / "sonicde/detached-retry"
+        dest.mkdir(parents=True)
+        subprocess.run(["git", "init", str(dest)], check=True, capture_output=True)
+        model = self._model("sonicde/detached-retry", {
+            "ref": "origin/master", "remotes": {"origin": {"url": str(remote)}}})
+        self.assertEqual(fetch_all(model, dry_run=True), 0)
+        self.assertFalse((dest / "file.txt").exists())
+        self.assertEqual(fetch_all(model), 0)
+        self.assertTrue((dest / "file.txt").exists())
+        result = subprocess.run(["git", "symbolic-ref", "-q", "HEAD"], cwd=dest, capture_output=True)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_unborn_checkout_with_local_files_is_not_overwritten(self):
+        remote = self._make_remote("local-data")
+        dest = self.source_root / "sonicde/local-data"
+        dest.mkdir(parents=True)
+        subprocess.run(["git", "init", str(dest)], check=True, capture_output=True)
+        (dest / "file.txt").write_text("preserve this")
+        model = self._model("sonicde/local-data", {
+            "ref": "origin/master", "local_branch": "master",
+            "remotes": {"origin": {"url": str(remote)}}})
+        self.assertEqual(fetch_all(model), 1)
+        self.assertEqual((dest / "file.txt").read_text(), "preserve this")
+        result = subprocess.run(["git", "rev-parse", "--verify", "HEAD"], cwd=dest, capture_output=True)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_empty_worktree_with_staged_deletions_stays_untouched(self):
+        remote = self._make_remote("deleted-source")
+        model = self._model("sonicde/deleted-source", {
+            "ref": "origin/master", "local_branch": "master",
+            "remotes": {"origin": {"url": str(remote)}}})
+        self.assertEqual(fetch_all(model), 0)
+        dest = self.source_root / "sonicde/deleted-source"
+        subprocess.run(["git", "rm", "file.txt"], cwd=dest, check=True, capture_output=True)
+        before = subprocess.run(["git", "status", "--porcelain"], cwd=dest,
+                                check=True, capture_output=True, text=True).stdout
+        self.assertEqual(fetch_all(model), 0)
+        self.assertFalse((dest / "file.txt").exists())
+        self.assertEqual(subprocess.run(["git", "status", "--porcelain"], cwd=dest,
+                                        check=True, capture_output=True, text=True).stdout, before)
+
+    def test_unborn_checkout_with_index_only_data_is_not_recovered(self):
+        remote = self._make_remote("index-data")
+        dest = self.source_root / "sonicde/index-data"
+        dest.mkdir(parents=True)
+        subprocess.run(["git", "init", str(dest)], check=True, capture_output=True)
+        local = dest / "file.txt"
+        local.write_text("staged data")
+        subprocess.run(["git", "add", "file.txt"], cwd=dest, check=True, capture_output=True)
+        local.unlink()
+        model = self._model("sonicde/index-data", {
+            "ref": "origin/master", "local_branch": "master",
+            "remotes": {"origin": {"url": str(remote)}}})
+        self.assertEqual(fetch_all(model), 1)
+        self.assertFalse(local.exists())
+        stored = subprocess.run(["git", "show", ":file.txt"], cwd=dest,
+                                check=True, capture_output=True, text=True).stdout
+        self.assertEqual(stored, "staged data")
+
+    def test_unborn_checkout_with_ignored_files_is_not_recovered(self):
+        remote = self._make_remote("ignored-data")
+        dest = self.source_root / "sonicde/ignored-data"
+        dest.mkdir(parents=True)
+        subprocess.run(["git", "init", str(dest)], check=True, capture_output=True)
+        (dest / ".git/info/exclude").write_text("file.txt\n")
+        (dest / "file.txt").write_text("ignored local data")
+        model = self._model("sonicde/ignored-data", {
+            "ref": "origin/master", "local_branch": "master",
+            "remotes": {"origin": {"url": str(remote)}}})
+        self.assertEqual(fetch_all(model), 1)
+        self.assertEqual((dest / "file.txt").read_text(), "ignored local data")
+
 
 if __name__ == "__main__":
     unittest.main()

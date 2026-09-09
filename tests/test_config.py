@@ -14,6 +14,27 @@ sys.path.insert(0, str(SCRIPTS))
 from config import Project, ConfigError
 
 
+class TestPublicRepositoryUrls(unittest.TestCase):
+    def test_shipped_github_remotes_use_anonymous_https(self):
+        """All manifests, including optional packages, must clone without SSH keys."""
+        root = Path(__file__).resolve().parent.parent
+        project = Project(root, root / "config/sonicde/solutions/sonicde.yaml")
+        project.load()
+        self.assertEqual(project.solution["sonicde_git"], "https://github.com/Sonic-DE")
+        self.assertEqual(project.solution["ossqm_git"], "https://github.com/oss-qm")
+        github_remotes = 0
+        for name, package in project.packages.items():
+            if not package.git:
+                continue
+            for remote_name, remote in package.git.remotes.items():
+                with self.subTest(package=name, remote=remote_name):
+                    self.assertFalse(remote.url.startswith(("git@", "ssh://")), remote.url)
+                    if "github.com" in remote.url:
+                        github_remotes += 1
+                        self.assertTrue(remote.url.startswith("https://github.com/"), remote.url)
+        self.assertGreater(github_remotes, 0)
+
+
 class TestConfigParsing(unittest.TestCase):
     """Test YAML parsing, interpolation, and closure resolution."""
 

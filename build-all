@@ -1,24 +1,93 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-only
-# build-all - full build including system validation and Qt probe
+# build-all - full build, optionally followed by system installation
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
+
+INSTALL=false
+INSTALL_PREFIX=/usr
+PREFIX_SET=false
+CONFIG_ARGS=()
+BUILD_ARGS=()
+usage() {
+    cat <<'EOF'
+Usage: ./build-all [--install] [--install-prefix PATH] [build options]
+
+  --install               Install to the system only after the full build succeeds.
+  --install-prefix PATH   System prefix (default /usr); requires --install.
+  --parallel N, -j N      Parallel build jobs.
+  --verbose, -v          Verbose build output.
+  --clean-first          Clean before building.
+  -solution-define K=V    Configuration override.
+  -project-define K=V     Project override.
+  -h, --help             Show this help without building.
+
+Without --install, packages install only to the solution's local prefix.
+With --install, dependency installs are staged privately in state/install-stage.
+No live system install is attempted until every meta-build target succeeds.
+After a successful --install build, sudo authenticates before system deployment.
+Only deployment is elevated; configuration and compilation run as the invoking user.
+EOF
+}
+
+while (($#)); do
+    case "$1" in
+        --install) INSTALL=true; shift ;;
+        --install-prefix)
+            [[ $# -ge 2 && -n "$2" && "$2" != -* ]] || { echo "--install-prefix requires a path" >&2; exit 2; }
+            INSTALL_PREFIX="$2"; PREFIX_SET=true; shift 2 ;;
+        --parallel|-j)
+            [[ $# -ge 2 && "$2" =~ ^[1-9][0-9]*$ ]] || { echo "$1 requires a positive job count" >&2; exit 2; }
+            BUILD_ARGS+=(--parallel "$2"); shift 2 ;;
+        --verbose|-v|--clean-first) BUILD_ARGS+=("$1"); shift ;;
+        -solution-define|-project-define)
+            [[ $# -ge 2 && "$2" == *=* ]] || { echo "$1 requires K=V" >&2; exit 2; }
+            CONFIG_ARGS+=("$1" "$2"); shift 2 ;;
+        -h|--help) usage; exit 0 ;;
+        *) echo "Unsupported option: $1 (use --help)" >&2; exit 2 ;;
+    esac
+done
+if [[ "$PREFIX_SET" == true && "$INSTALL" != true ]]; then
+    echo "--install-prefix requires --install" >&2
+    exit 2
+fi
+GENERATE_ARGS=()
+if [[ "$INSTALL" == true ]]; then
+    [[ "$INSTALL_PREFIX" == /* && "$INSTALL_PREFIX" != *';'* && "$INSTALL_PREFIX" != *$'\n'* ]] || {
+        echo "--install-prefix must be an absolute path without semicolons or newlines" >&2; exit 2;
+    }
+    # Configure for the FINAL prefix, not a prefix override at deployment time:
+    # compiled-in paths must refer to the system destination, not the staging tree.
+    CONFIG_ARGS+=(-solution-define "install-prefix=$INSTALL_PREFIX")
+    GENERATE_ARGS+=(--staging-root "$SCRIPT_DIR/state/install-stage")
+fi
 
 # Generate model
 python3 scripts/config.py -root . \
     -solution config/sonicde/solutions/sonicde.yaml \
     -out state/model.json \
-    "$@"
+    "${CONFIG_ARGS[@]}"
+
+# Check every source before launching any configuration/build jobs.
+python3 scripts/check_sources.py -model state/model.json
 
 # Validate system dependencies
-python3 scripts/validate.py -model state/model.json "$@"
+python3 scripts/validate.py -model state/model.json
 
 # Generate CMake superbuild
-python3 scripts/generate.py -model state/model.json
+python3 scripts/generate.py -model state/model.json "${GENERATE_ARGS[@]}"
 
 # Configure parent (includes Qt6 Core probe)
 cmake -B build -S . -G Ninja
 
 # Build everything
-cmake --build build "$@"
+cmake --build build "${BUILD_ARGS[@]}"
+
+# set -e above is the deployment barrier: a failed configure/build never reaches
+# this phase. Do not move this into a per-package ExternalProject step.
+if [[ "$INSTALL" == true ]]; then
+    echo "Full meta-build succeeded. Authenticating for system installation..."
+    sudo -v
+    sudo -- python3 "$SCRIPT_DIR/scripts/install.py" -model "$SCRIPT_DIR/state/model.json"
+fi

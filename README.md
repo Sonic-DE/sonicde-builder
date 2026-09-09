@@ -64,6 +64,46 @@ scripts.
 Each script requires a clean working tree in every repo it touches.
 Repos with uncommitted changes are skipped with a warning.
 
+build and system installation:
+------------------------------
+
+Build into the solution's local prefix (the default remains `build/`):
+
+    ./build-all --parallel 8
+
+Build the full meta-build, then install its CMake packages to `/usr`:
+
+    ./build-all --install --parallel 8
+
+Select a different final destination with:
+
+    ./build-all --install --install-prefix /opt/sonicde --parallel 8
+
+With `--install`, packages are configured for the final destination, but their
+dependency installations during the build are redirected through `DESTDIR` to
+`state/install-stage/`. Later packages discover these staged dependencies.
+**No live-system installation starts until the entire meta-build succeeds.**
+If validation, configuration or any build fails, deployment is not run.
+Partial-target builds are not accepted by this wrapper.
+
+After the full build succeeds, the wrapper runs `sudo -v` to authenticate
+(prompting for a password when required by sudo policy), then runs only the
+installation helper under sudo. Cancelling or failing authentication prevents
+deployment. Configuration and compilation are not elevated. If deployment
+needs to be retried after a successful `--install` build, authenticate and run
+the deployment-only step from the workspace:
+
+    sudo -v
+    sudo -- python3 scripts/install.py -model state/model.json
+
+Use that helper only with the model from the completed system-prefix build.
+It checks all package installation scripts and configured prefixes before
+starting, skips system/no-build packages, and stops on the first install error.
+Deployment is not transactional: an install failure can leave earlier packages
+installed, although no packages are deployed while the meta-build is incomplete.
+For scratch staging, invoke the helper directly with `DESTDIR` set; the sudo
+wrapper does not forward that environment variable into system installation.
+
 architecture:
 -------------
 
@@ -76,6 +116,7 @@ superbuild using `ExternalProject_Add`.
     scripts/fetch.py         fetch Git repositories from manifest metadata
     scripts/validate.py      validate system dependencies and Qt6 Core
     scripts/generate.py      generate CMake ExternalProject superbuild
+    scripts/install.py       deploy completed CMake packages after the full build
     scripts/git-autopick     upstream sync (rebase tracker range onto master)
 
 configuration:

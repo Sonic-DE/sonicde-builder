@@ -3,9 +3,11 @@
 """
 Fetch active Git repositories for the SonicDE standalone builder.
 
-Source acquisition lives here, not in ExternalProject.  Existing checkouts are
-updated without mutating HEAD/branch/index/worktree.  Missing checkouts are
+Source acquisition lives here, not in ExternalProject. Completed checkouts are
+updated without mutating HEAD/branch/index/worktree. Missing checkouts are
 initialized, configured, fetched, and checked out per manifest metadata.
+An empty init left by a failed initial fetch is completed on retry only when
+it has no HEAD, local branches, index entries or worktree files to preserve.
 """
 from __future__ import annotations
 
@@ -46,6 +48,31 @@ def checkout_path(model: dict, pkg_name: str) -> Path:
     """Compute the checkout path for a package."""
     source_root = Path(model["source_root"])
     return source_root / pkg_name
+
+
+def checkout_initial_ref(git_spec: dict, dest: Path) -> None:
+    """Populate a newly fetched worktree; never reset an existing local branch."""
+    ref = git_spec.get("ref", "")
+    if not ref:
+        raise RuntimeError(f"No initial checkout ref declared for {dest}")
+    branch = git_spec.get("local_branch", "")
+    if branch:
+        run_git(str(dest), ["checkout", "-b", branch, ref])
+    else:
+        run_git(str(dest), ["checkout", "--detach", ref])
+
+
+def require_empty_initial_checkout(dest: Path) -> None:
+    """Only resume an empty init, never an orphan branch or local work."""
+    if not (dest / ".git").is_dir():
+        raise RuntimeError(f"Refusing initial-checkout recovery in linked worktree {dest}")
+    if run_git(str(dest), ["for-each-ref", "--format=%(refname)", "refs/heads/"]).stdout.strip():
+        raise RuntimeError(f"Refusing initial-checkout recovery: local branches exist in {dest}")
+    if run_git(str(dest), ["ls-files", "--stage"]).stdout.strip():
+        raise RuntimeError(f"Refusing initial-checkout recovery: index contains local work in {dest}")
+    # status --porcelain omits ignored files; count every worktree entry instead.
+    if any(entry.name != ".git" for entry in dest.iterdir()):
+        raise RuntimeError(f"Refusing initial-checkout recovery: local files exist in {dest}")
 
 
 def fetch_missing(pkg_name: str, git_spec: dict, dest: Path,
@@ -102,24 +129,23 @@ def fetch_missing(pkg_name: str, git_spec: dict, dest: Path,
               f"({redact_url(rdata.get('url', ''))})")
         run_git(repo_dir, fetch_args)
 
-    # checkout the ref
-    ref = git_spec.get("ref", "")
-    local_branch = git_spec.get("local_branch", "")
-    if local_branch:
-        # create local branch from the ref
-        run_git(repo_dir, ["checkout", "-B", local_branch, ref])
-    else:
-        run_git(repo_dir, ["checkout", ref])
+    checkout_initial_ref(git_spec, dest)
 
 
 def fetch_existing(pkg_name: str, git_spec: dict, dest: Path,
                    dry_run: bool = False) -> None:
-    """Update an existing checkout without mutating HEAD/index/worktree."""
+    """Fetch without changing checked-out work; resume a pristine incomplete init."""
     if dry_run:
         print(f"[{pkg_name}] would fetch existing at {dest}")
         return
 
     repo_dir = str(dest)
+    needs_initial_checkout = run_git(
+        repo_dir, ["rev-parse", "--verify", "HEAD^{commit}"], check=False
+    ).returncode != 0
+    if needs_initial_checkout:
+        require_empty_initial_checkout(dest)
+        print(f"[{pkg_name}] resuming incomplete initial fetch (no checked-out commit)")
     print(f"[{pkg_name}] updating {dest}")
 
     # repair declared remote URLs and config
@@ -156,6 +182,11 @@ def fetch_existing(pkg_name: str, git_spec: dict, dest: Path,
             fetch_args.append(refspec)
         print(f"[{pkg_name}] fetching {rname}")
         run_git(repo_dir, fetch_args)
+
+    if needs_initial_checkout:
+        # Recheck after network operations before populating any files.
+        require_empty_initial_checkout(dest)
+        checkout_initial_ref(git_spec, dest)
 
 
 def validate_existing(pkg_name: str, git_spec: dict,

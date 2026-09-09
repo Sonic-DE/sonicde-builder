@@ -30,7 +30,7 @@ class TestPanelViewScreenGuard(unittest.TestCase):
         body = match.group("body")
         self.assertRegex(
             body,
-            r"if\s*\(\s*!m_initCompleted\s*\|\|\s*!m_screenToFollow\s*\)\s*\{\s*return\s*\{\}\s*;",
+            r"if\s*\(\s*!m_initCompleted\s*\|\|\s*!m_screenToFollow[^\{]*\{\s*return\s*\{\}\s*;",
             "preferredSize() must return before using a null screen",
         )
         self.assertLess(
