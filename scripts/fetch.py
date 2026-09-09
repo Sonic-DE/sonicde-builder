@@ -75,6 +75,33 @@ def require_empty_initial_checkout(dest: Path) -> None:
         raise RuntimeError(f"Refusing initial-checkout recovery: local files exist in {dest}")
 
 
+def update_missing_submodules(pkg_name: str, dest: Path) -> None:
+    """Initialize absent submodules recursively without moving existing ones."""
+    modules = dest / ".gitmodules"
+    if not modules.is_file():
+        return
+    configured = run_git(
+        str(dest), ["config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$"],
+        check=False,
+    )
+    if configured.returncode not in (0, 1):
+        raise RuntimeError(f"Unable to read submodules in {dest}: {configured.stderr}")
+    for line in configured.stdout.splitlines():
+        _, separator, relative = line.partition(" ")
+        if not separator or not relative:
+            continue
+        status = run_git(str(dest), ["submodule", "status", "--", relative], check=False)
+        if status.returncode != 0:
+            raise RuntimeError(f"Unable to inspect submodule {relative} in {dest}: {status.stderr}")
+        if not status.stdout or status.stdout.startswith("-"):
+            print(f"[{pkg_name}] initializing submodule {relative}")
+            run_git(str(dest), ["submodule", "update", "--init", "--recursive", "--", relative])
+        else:
+            # Preserve this submodule's HEAD and worktree, but initialize any
+            # missing nested submodules recorded by that existing commit.
+            update_missing_submodules(pkg_name, dest / relative)
+
+
 def fetch_missing(pkg_name: str, git_spec: dict, dest: Path,
                   dry_run: bool = False) -> None:
     """Initialize and fetch a new checkout."""
@@ -130,6 +157,7 @@ def fetch_missing(pkg_name: str, git_spec: dict, dest: Path,
         run_git(repo_dir, fetch_args)
 
     checkout_initial_ref(git_spec, dest)
+    update_missing_submodules(pkg_name, dest)
 
 
 def fetch_existing(pkg_name: str, git_spec: dict, dest: Path,
@@ -187,6 +215,8 @@ def fetch_existing(pkg_name: str, git_spec: dict, dest: Path,
         # Recheck after network operations before populating any files.
         require_empty_initial_checkout(dest)
         checkout_initial_ref(git_spec, dest)
+
+    update_missing_submodules(pkg_name, dest)
 
 
 def validate_existing(pkg_name: str, git_spec: dict,

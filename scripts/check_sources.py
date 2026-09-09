@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -21,6 +22,16 @@ def source_problems(model: dict) -> list[str]:
             problems.append(f"[{name}] missing source directory: {source}")
         elif package.get("buildsystem", "") in ("", "cmake") and not (source / "CMakeLists.txt").is_file():
             problems.append(f"[{name}] missing CMakeLists.txt: {source / 'CMakeLists.txt'}")
+        elif (source / ".gitmodules").is_file() and (source / ".git").exists():
+            status = subprocess.run(["git", "submodule", "status", "--recursive"], cwd=source,
+                                    capture_output=True, text=True)
+            if status.returncode != 0:
+                problems.append(f"[{name}] cannot inspect submodules: {status.stderr.strip()}")
+            else:
+                missing = [line[1:].split(" ", 1)[1].split(" (", 1)[0]
+                           for line in status.stdout.splitlines() if line.startswith("-")]
+                if missing:
+                    problems.append(f"[{name}] uninitialized submodules: {', '.join(missing)}")
     return problems
 
 

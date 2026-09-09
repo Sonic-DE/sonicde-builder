@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 SCRIPTS = Path(__file__).parent.parent / "scripts"
@@ -295,6 +296,35 @@ class TestFetch(unittest.TestCase):
             "remotes": {"origin": {"url": str(remote)}}})
         self.assertEqual(fetch_all(model), 1)
         self.assertEqual((dest / "file.txt").read_text(), "ignored local data")
+
+    def test_existing_checkout_initializes_missing_submodule_and_preserves_changes(self):
+        child = self._make_remote("submodule-child")
+        parent = self._make_remote("submodule-parent")
+        work = self.root / "work/submodule-parent"
+        subprocess.run(["git", "-c", "protocol.file.allow=always", "submodule", "add",
+                        str(child), "lib/interfaces"], cwd=work, check=True, capture_output=True)
+        subprocess.run(["git", "commit", "-am", "add interfaces"], cwd=work,
+                       check=True, capture_output=True)
+        subprocess.run(["git", "push", "origin", "master"], cwd=work,
+                       check=True, capture_output=True)
+
+        dest = self.source_root / "sonicde/submodule-parent"
+        dest.parent.mkdir(parents=True)
+        subprocess.run(["git", "clone", str(parent), str(dest)], check=True, capture_output=True)
+        self.assertFalse((dest / "lib/interfaces/file.txt").exists())
+        model = self._model("sonicde/submodule-parent", {
+            "ref": "origin/master", "local_branch": "master",
+            "remotes": {"origin": {"url": str(parent)}},
+        })
+        with mock.patch.dict(os.environ, {"GIT_ALLOW_PROTOCOL": "file"}):
+            self.assertEqual(fetch_all(model), 0)
+        nested = dest / "lib/interfaces/file.txt"
+        self.assertTrue(nested.exists())
+
+        nested.write_text("preserve local submodule work")
+        with mock.patch.dict(os.environ, {"GIT_ALLOW_PROTOCOL": "file"}):
+            self.assertEqual(fetch_all(model), 0)
+        self.assertEqual(nested.read_text(), "preserve local submodule work")
 
 
 if __name__ == "__main__":
