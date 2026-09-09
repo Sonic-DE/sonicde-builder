@@ -1,0 +1,8 @@
+provides: sys/shared-mime-info
+type: system
+commands: update-mime-database
+
+platform-packages:
+    debian: shared-mime-info
+    devuan: shared-mime-info
+    arch: shared-mime-info

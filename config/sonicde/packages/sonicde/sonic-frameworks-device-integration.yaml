@@ -26,3 +26,5 @@ buildsystem: cmake
 
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
+    - os-installed/bison
+    - os-installed/flex

@@ -1,0 +1,8 @@
+provides: sys/perl
+type: system
+commands: perl
+
+platform-packages:
+    debian: perl
+    devuan: perl
+    arch: perl
