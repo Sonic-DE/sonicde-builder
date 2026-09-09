@@ -64,6 +64,52 @@ def test_system_destination_untouched_until_meta_build_succeeds(tmp_path, monkey
     assert (destination / "share/consumer/payload.txt").read_text() == "consumer"
 
 
+def test_staged_tool_finds_staged_xdg_data(tmp_path):
+    src = tmp_path / "src"
+    stage = tmp_path / "stage"
+    package_builds = tmp_path / "package-builds"
+    meta_build = tmp_path / "meta-build"
+    prereq = src / "prereq"
+    consumer = src / "consumer"
+    prereq.mkdir(parents=True)
+    consumer.mkdir(parents=True)
+    tool = prereq / "staged-data-tool"
+    tool.write_text(
+        "#!/usr/bin/env python3\n"
+        "import os, pathlib, sys\n"
+        "roots = os.environ.get('XDG_DATA_DIRS', '').split(':')\n"
+        "sys.exit(0 if any((pathlib.Path(p) / 'fixture/catalog.xml').is_file() for p in roots if p) else 23)\n")
+    (prereq / "catalog.xml").write_text("catalog\n")
+    (prereq / "FixtureConfig.cmake").write_text("set(Fixture_FOUND TRUE)\n")
+    (prereq / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(Prereq NONE)\n"
+        "install(PROGRAMS staged-data-tool DESTINATION bin)\n"
+        "install(FILES catalog.xml DESTINATION share/fixture)\n"
+        "install(FILES FixtureConfig.cmake DESTINATION lib/cmake/Fixture)\n")
+    (consumer / "payload.txt").write_text("consumer\n")
+    (consumer / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(Consumer NONE)\n"
+        "find_package(Fixture REQUIRED)\n"
+        "find_program(STAGED_DATA_TOOL staged-data-tool REQUIRED)\n"
+        "add_custom_target(verify ALL COMMAND ${STAGED_DATA_TOOL})\n"
+        "install(FILES payload.txt DESTINATION share/consumer)\n")
+    model = {
+        "packages": {"prereq": {"buildsystem": "cmake"}, "consumer": {"buildsystem": "cmake"}},
+        "topo_order": ["prereq", "consumer"],
+        "edges": [{"dependent": "consumer", "prerequisite": "prereq", "kind": "depends"}],
+        "source_root": str(src), "build_dir": str(package_builds), "install_prefix": "/usr",
+    }
+    generated = tmp_path / "SonicDEProjects.cmake"
+    generate_cmake(model, generated, staging_root=stage)
+    (tmp_path / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(Meta NONE)\ninclude(SonicDEProjects.cmake)\n")
+    subprocess.run(["cmake", "-S", str(tmp_path), "-B", str(meta_build), "-G", "Ninja"],
+                   check=True, capture_output=True)
+    subprocess.run(["cmake", "--build", str(meta_build)], check=True, capture_output=True)
+    assert (stage / "usr/share/fixture/catalog.xml").is_file()
+    assert (stage / "usr/share/consumer/payload.txt").is_file()
+
+
 def test_preflight_checks_all_packages_before_install(tmp_path, monkeypatch):
     first = tmp_path / "first"
     first.mkdir()

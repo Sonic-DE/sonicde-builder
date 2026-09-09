@@ -109,7 +109,12 @@ def generate_cmake(model: dict, out_file: Path, staging_root: Path | None = None
                 f'"PATH={search_prefix}/bin:$ENV{{PATH}}" '
                 f'"PKG_CONFIG_PATH={search_prefix}/lib64/pkgconfig:{search_prefix}/lib/pkgconfig:'
                 f'{search_prefix}/share/pkgconfig:$ENV{{PKG_CONFIG_PATH}}" '
-                f'"LD_LIBRARY_PATH={search_prefix}/lib64:{search_prefix}/lib:$ENV{{LD_LIBRARY_PATH}}"'
+                f'"LD_LIBRARY_PATH={search_prefix}/lib64:{search_prefix}/lib:$ENV{{LD_LIBRARY_PATH}}" '
+                f'"XDG_DATA_DIRS={search_prefix}/share:$ENV{{XDG_DATA_DIRS}}:/usr/local/share:/usr/share" '
+                f'"XDG_CONFIG_DIRS={search_prefix}/etc/xdg:$ENV{{XDG_CONFIG_DIRS}}:/etc/xdg" '
+                f'"QT_PLUGIN_PATH={search_prefix}/lib64/plugins:{search_prefix}/lib/plugins:$ENV{{QT_PLUGIN_PATH}}" '
+                f'"QML_IMPORT_PATH={search_prefix}/lib64/qml:{search_prefix}/lib/qml:$ENV{{QML_IMPORT_PATH}}" '
+                f'"QML2_IMPORT_PATH={search_prefix}/lib64/qml:{search_prefix}/lib/qml:$ENV{{QML2_IMPORT_PATH}}"'
             )
             configure_cmd = (f'"${{CMAKE_COMMAND}}" -E env {staged_env} '
                              f'"${{CMAKE_COMMAND}}" -S <SOURCE_DIR> -B <BINARY_DIR> {cmake_args_str}')
