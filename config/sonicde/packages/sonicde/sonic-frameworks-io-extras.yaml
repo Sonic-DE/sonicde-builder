@@ -12,7 +12,7 @@ sources:
                 fetch: ${@SOLUTION::fetch::upstream}
         config:
             autopick.enabled: 'true'
-            autopick.upstream: upstream/release/26.04
+            autopick.upstream: upstream/release/26.08
             autopick.master: origin/${master_branch}
             autopick.tracker: origin/tracking/master
             advice.detachedHead: 'false'
