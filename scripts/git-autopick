@@ -24,7 +24,7 @@ msg() {
 filter_rebase_todo() {
     local todo="$1"
     local filtered="${todo}.filtered"
-    local line command rest commit author_email subject ignore_reason
+    local line command rest commit author_email subject
 
     : > "$filtered"
     while IFS= read -r line || [ -n "$line" ]; do
@@ -37,24 +37,19 @@ filter_rebase_todo() {
                     || die "cannot inspect rebase commit $commit"
                 subject=$(git show -s --format='%s' "$commit") \
                     || die "cannot inspect rebase commit $commit"
-                ignore_reason=""
                 if [ "$author_email" = "$IGNORED_AUTHOR_EMAIL" ]; then
-                    ignore_reason="author $IGNORED_AUTHOR_EMAIL"
-                else
-                    case "$subject" in
-                        "Update version for new release"*|\
-                        "Update version to "*|\
-                        "Update dependency version to "*|\
-                        "Upgrade release service version to "*)
-                            ignore_reason="version-bump subject: $subject"
-                            ;;
-                    esac
-                fi
-                if [ -n "$ignore_reason" ]; then
-                    msg "ignoring upstream commit $commit ($ignore_reason)"
                     printf 'drop %s\n' "$rest" >> "$filtered"
                     continue
                 fi
+                case "$subject" in
+                    "Update version for new release"*|\
+                    "Update version to "*|\
+                    "Update dependency version to "*|\
+                    "Upgrade release service version to "*)
+                        printf 'drop %s\n' "$rest" >> "$filtered"
+                        continue
+                        ;;
+                esac
                 ;;
         esac
         printf '%s\n' "$line" >> "$filtered"

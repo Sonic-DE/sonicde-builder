@@ -265,7 +265,7 @@ class TestIgnoredAutomationCommits(AutopickTestBase):
             env=self._fake_gh(gh_marker))
 
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("ignoring upstream commit", r.stderr)
+        self.assertNotIn("ignoring upstream commit", r.stderr)
         self.assertIn("no new changes after rebase", r.stderr)
         self.assertFalse(gh_marker.exists(), "gh was invoked for ignored commits")
         self.assertEqual(
@@ -303,7 +303,7 @@ class TestIgnoredAutomationCommits(AutopickTestBase):
             env=self._fake_gh())
 
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("ignoring upstream commit", r.stderr)
+        self.assertNotIn("ignoring upstream commit", r.stderr)
         branch = "origin/pr/sync-with-upstream"
         self.assertEqual(
             git(work, "rev-list", "--count", f"origin/master..{branch}").stdout.strip(),
@@ -401,7 +401,7 @@ class TestIgnoredVersionBumpCommits(AutopickTestBase):
             env=self._fake_gh())
 
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("ignoring upstream commit", r.stderr)
+        self.assertNotIn("ignoring upstream commit", r.stderr)
         branch = "origin/pr/sync-with-upstream"
         self.assertEqual(
             git(work, "rev-list", "--count", f"origin/master..{branch}").stdout.strip(),
