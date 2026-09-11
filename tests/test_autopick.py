@@ -356,6 +356,7 @@ class TestIgnoredVersionBumpCommits(AutopickTestBase):
             "Update version for new release",
             "Update version to 6.7.5",
             "Update dependency version to 6.7.5",
+            "GIT_SILENT Upgrade release service version to 26.08.0",
             "Upgrade release service version to 6.7.5",
         ):
             self._commit_with_message(up_work, message)

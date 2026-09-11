@@ -45,6 +45,7 @@ filter_rebase_todo() {
                     "Update version for new release"*|\
                     "Update version to "*|\
                     "Update dependency version to "*|\
+                    "GIT_SILENT Upgrade release service version to "*|\
                     "Upgrade release service version to "*)
                         printf 'drop %s\n' "$rest" >> "$filtered"
                         continue
