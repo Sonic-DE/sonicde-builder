@@ -29,3 +29,4 @@ build-depends:
 
 depends:
     - sonicde/sonic-frameworks-xml-gui
+    - sonicde/sonic-frameworks-io

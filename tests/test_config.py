@@ -34,6 +34,13 @@ class TestPublicRepositoryUrls(unittest.TestCase):
                         self.assertTrue(remote.url.startswith("https://github.com/"), remote.url)
         self.assertGreater(github_remotes, 0)
 
+    def test_ui_components_declares_direct_kio_dependency(self):
+        root = Path(__file__).resolve().parent.parent
+        project = Project(root, root / "config/sonicde/solutions/sonicde.yaml")
+        project.load()
+        package = project.packages["sonicde/sonic-frameworks-ui-components"]
+        self.assertIn("sonicde/sonic-frameworks-io", package.depends)
+
 
 class TestConfigParsing(unittest.TestCase):
     """Test YAML parsing, interpolation, and closure resolution."""

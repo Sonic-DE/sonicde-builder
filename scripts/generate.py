@@ -95,8 +95,10 @@ def generate_cmake(model: dict, out_file: Path, staging_root: Path | None = None
             cmake_args.append(f"-DCMAKE_PREFIX_PATH={search_prefix}")
         if staging_root is not None:
             # Clear stale caches created by the unsafe CMAKE_STAGING_PREFIX
-            # implementation; DESTDIR is the only pre-deployment redirect.
+            # implementation and stale package locations from earlier builds;
+            # staged dependencies must replace same-named system packages.
             cmake_args.append("-UCMAKE_STAGING_PREFIX")
+            cmake_args.append("-U*_DIR")
         cmake_args += pkg.get("cmake_extra_args", [])
 
         # Escape args for CMake
@@ -126,8 +128,12 @@ def generate_cmake(model: dict, out_file: Path, staging_root: Path | None = None
             )
             configure_cmd = (f'"${{CMAKE_COMMAND}}" -E env {staged_env} '
                              f'"${{CMAKE_COMMAND}}" -S <SOURCE_DIR> -B <BINARY_DIR> {cmake_args_str}')
-            build_cmd = (f'"${{CMAKE_COMMAND}}" -E env {staged_env} "DESTDIR={staging_root}" '
-                         f'"${{CMAKE_COMMAND}}" --build <BINARY_DIR>{parallel_arg} --target install')
+            install_cmd = (f'"${{CMAKE_COMMAND}}" -E env {staged_env} "DESTDIR={staging_root}" '
+                           f'"${{CMAKE_COMMAND}}" --build <BINARY_DIR>{parallel_arg} --target install')
+            # BUILD_ALWAYS does not make ExternalProject's configure stamp run
+            # again. Reconfigure here so incremental builds cannot retain
+            # /usr package caches after the staged provider becomes available.
+            build_cmd = f"{configure_cmd} COMMAND {install_cmd}"
 
         lines.append(f"# ExternalProject: {name}")
         lines.append(f"ExternalProject_add({target}")

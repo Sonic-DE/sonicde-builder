@@ -126,6 +126,18 @@ class TestGenerateCMake(unittest.TestCase):
         self.assertIn(f"QT_PLUGIN_PATH={staged_prefix}/lib64/plugins:", text)
         self.assertIn(f"QML_IMPORT_PATH={staged_prefix}/lib64/qml:", text)
 
+    def test_staged_build_reconfigures_and_clears_cached_package_dirs(self):
+        model = self._model(
+            {"sonicde/a": {"buildsystem": "cmake", "git": {}}}, [], ["sonicde/a"])
+        out = self.root / "out.cmake"
+        generate_cmake(model, out, staging_root=self.root / "stage", jobs=2)
+        text = out.read_text()
+        block = text[text.index("ExternalProject_add("):text.index(")\n", text.index("ExternalProject_add("))]
+        self.assertIn('"-U*_DIR"', block)
+        self.assertIn("BUILD_COMMAND", block)
+        self.assertGreaterEqual(block.count('"${CMAKE_COMMAND}" -S <SOURCE_DIR> -B <BINARY_DIR>'), 2)
+        self.assertIn("COMMAND", block.split("BUILD_COMMAND", 1)[1])
+
     def test_package_parallelism_is_bounded_in_inner_build(self):
         model = self._model(
             {"sonicde/a": {"buildsystem": "cmake", "git": {}}}, [], ["sonicde/a"])
