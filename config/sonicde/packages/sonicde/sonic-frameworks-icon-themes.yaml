@@ -29,4 +29,4 @@ build-depends:
 
 depends:
     - sonicde/sonic-frameworks-settings
-    - sonicde/sonic-frameworks-silver-icons
+    - sonicde/sonic-silver-icons

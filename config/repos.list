@@ -79,7 +79,6 @@ sonic-frameworks-runner
 sonic-frameworks-settings
 sonic-frameworks-settings-ui
 sonic-frameworks-settings-utils
-sonic-frameworks-silver-icons
 sonic-frameworks-spell-check
 sonic-frameworks-sso
 sonic-frameworks-status-notification
@@ -123,6 +122,7 @@ sonic-screenies
 sonic-screenlocker
 sonic-silver
 sonic-silver-gtk
+sonic-silver-icons
 sonic-ssh-password-prompt
 sonic-system-monitor-library
 sonic-system-info

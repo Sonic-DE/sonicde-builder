@@ -30,5 +30,5 @@ build-depends:
 depends:
     - sonicde/sonic-frameworks-data-models
     - sonicde/sonic-frameworks-settings
-    - sonicde/sonic-frameworks-silver-icons
     - sonicde/sonic-frameworks-windowsystem
+    - sonicde/sonic-silver-icons
