@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-only
 # merge-graphs - combine per-project graphify-out/graph.json files into the
-# root graphify-out/graph.json (a cross-repo graph over all graphified
-# SonicDE sub-projects). graphify's detect() never auto-discovers nested
+# root graphify-out/graph.json and its interactive graph.html (a cross-repo
+# graph over all graphified SonicDE sub-projects). graphify's detect() never auto-discovers nested
 # repos under src/, so the root graph is assembled explicitly here.
 #
 # This is a FULL rebuild: graphify merge-graphs composes every input graph
@@ -13,6 +13,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 OUT="graphify-out/graph.json"
+HTML_OUT="graphify-out/graph.html"
+LABELS_OUT="graphify-out/.graphify_labels.json"
 
 # nullglob so a missing graph.json doesn't leave a literal pattern in the
 # array (which would make merge-graphs error with "not found").
@@ -28,4 +30,12 @@ fi
 
 mkdir -p graphify-out
 graphify merge-graphs "${graphs[@]}" --out "$OUT"
-echo "Merged ${#graphs[@]} per-project graphs -> $OUT"
+python3 scripts/combined_graph_labels.py "$OUT" "$LABELS_OUT"
+# The merged graph is far above graphify's 5,000-node visualization limit, so
+# graphify first reduces it to a community-level graph. SonicDE currently has
+# more than 5,000 communities across its subprojects as well; raise only the
+# second-stage rendering ceiling so the full node graph is never sent to the
+# browser.
+GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-20000}" \
+    graphify export html --graph "$OUT" --labels "$LABELS_OUT"
+echo "Merged ${#graphs[@]} per-project graphs -> $OUT and $HTML_OUT"
