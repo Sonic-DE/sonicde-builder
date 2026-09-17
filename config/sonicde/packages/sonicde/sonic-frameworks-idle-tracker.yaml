@@ -29,6 +29,3 @@ build-depends:
     - os-installed/libx11
     - os-installed/libx11-xcb
     - os-installed/libxcb
-
-cmake-extra-args:
-    - -DWITH_WAYLAND=OFF
