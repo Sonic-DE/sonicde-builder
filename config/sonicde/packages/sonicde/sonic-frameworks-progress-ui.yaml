@@ -28,7 +28,7 @@ build-depends:
     - sonicde/sonic-frameworks-cmake-modules
     - sonicde/sonic-frameworks-core-addons
     - sonicde/sonic-frameworks-widgets-addons
-    - sonicde/sonic-pyside-setup
+    - sonicde/sonic-pyside
     - os-installed/python3-build
     - os-installed/python3-setuptools
     - os-installed/python3-wheel

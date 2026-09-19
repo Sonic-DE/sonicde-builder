@@ -128,7 +128,7 @@ build:
     - sonicde/sonic-pipewire
     - sonicde/sonic-polkit
     - sonicde/sonic-polkit-agent
-    - sonicde/sonic-pyside-setup
+    - sonicde/sonic-pyside
     - sonicde/sonic-pulseaudio-library
     - sonicde/sonic-qt-accounts-library
     - sonicde/sonic-qt-theme-bridge
