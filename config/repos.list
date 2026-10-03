@@ -128,6 +128,7 @@ sonic-system-monitor-library
 sonic-system-info
 sonic-system-log
 sonic-system-monitor
+sonic-system-settings
 sonic-system-stats
 sonic-terminal
 sonic-terminal-tools

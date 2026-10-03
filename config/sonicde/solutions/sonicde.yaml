@@ -145,6 +145,7 @@ build:
     - sonicde/sonic-system-info
     - sonicde/sonic-system-log
     - sonicde/sonic-system-monitor
+    - sonicde/sonic-system-settings
     - sonicde/sonic-system-stats
     - sonicde/sonic-terminal
     - sonicde/sonic-terminal-tools
