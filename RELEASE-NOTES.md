@@ -55,10 +55,14 @@ GPL-2.0-or-later.
 
 - **sonic-login-manager** now requires sonic-frameworks-init-info, sonic-frameworks-ipc and sonic-frameworks-logging.
 - **sonic-desktop-interface** and **sonic-screenlocker** now require sonic-frameworks-ipc and sonic-frameworks-logging.
-- **sonic-firewall** will require sonic-frameworks-init-info and sonic-frameworks-logging once its init-system-agnostic change lands.
+- **sonic-firewall** now requires sonic-frameworks-init-info, sonic-frameworks-ipc and sonic-frameworks-logging.
+- **sonic-theme-sdk** no longer needs Plasma5Support. Its `plasmaengineexplorer` program, man page and
+  translations are gone; drop them from your package's file list.
 
 ### Actions
 
+- **sonic-plasma5-support-library is no longer released.** It has left the Core release list, so it gets no
+  new tags. Keep its 6.8.0 package or replace it with your distribution's KDE `plasma5support`.
 - **Restart the display manager after upgrading sonic-login-manager.** The greeter, the settings page and the helper now talk over a new protocol, and old and new versions can't talk to each other.
 - **Upgrade sonic-desktop-interface as a whole.** The keyboard layout applet and the keyboard service now use keyboard protocol version 2. The screen locker and the applet switch to the new protocol the next time they start.
 - **Set the root log directory at build time** with `-DSONIC_LOGGING_ROOT_DIR=…` in sonic-frameworks-logging (default `/var/log/sonic`). sonic-login-manager's `LOG_FILE` option is gone.
@@ -69,6 +73,33 @@ GPL-2.0-or-later.
 
   The shipped OpenRC and dinit rules use `copytruncate` for logs the service manager opened.
 - **dinit packages:** install the new `soniclogin-logdir` scripted service. The service files run `soniclogin --prepare-log-directory` before the service manager opens the log.
+- **Reinstall anything installed with `./build-repo … --install` or `./build-all --install`.** Staged builds
+  wrote the builder's private staging directory (`state/install-stage/<prefix>/lib`) into installed programs'
+  library search path (RUNPATH), so root programs such as `sonic-firewall-service` and `soniclogin` would load
+  libraries from a directory the building user can write to. Staged builds now turn off ECM's link-path RPATH
+  (`-DKDE_SKIP_RPATH_SETTINGS=ON`); an install prefix other than `/usr` gets that prefix's `lib64` and `lib`
+  instead. Check with `readelf -d <program> | grep -i runpath`. Distribution packages built outside the
+  builder aren't affected.
+- **sonic-firewall installs a root daemon, `sonic-firewall-service`,** in the libexec directory, with service
+  files for systemd, OpenRC, runit, s6, dinit and sysvinit. Enable it on every init, systemd included, so the
+  firewall settings use it; without it they fall back to the KAuth helper, which still works.
+  - It uses the same init switches as sonic-login-manager: by default the build machine's inits are detected;
+    `-DMANUAL_INITS=ON` installs none, or exactly those named with `-D<INIT>_FOUND=ON`; `-DSPLIT_BUILD=ON`
+    installs all of them, one CPack component each. The OpenRC and sysvinit packages both own
+    `/etc/init.d/sonic-firewall-service` and conflict; choosing both without `SPLIT_BUILD` stops the configure
+    with an error.
+  - It needs the system D-Bus and polkit running. Its runit, s6, dinit and sysvinit files depend on a D-Bus
+    service named `dbus`; rename the dependency if your distribution calls it something else (for example
+    `dbus-srv`).
+- **sonic-firewall also installs a KAuth fallback helper,** its D-Bus system service and policy files, and its
+  polkit action `org.sonicde.firewall.servicehelper`, which the daemon checks too. Include all of them in the
+  package.
+- **sonic-login-manager's sysvinit script was rewritten** as an LSB script that needs `start-stop-daemon`.
+  Init detection no longer reports sysvinit when OpenRC is present, and choosing both with
+  `-DMANUAL_INITS=ON -DOPENRC_FOUND=ON -DSYSVINIT_FOUND=ON` without `SPLIT_BUILD` now stops the configure,
+  because both install `init.d/soniclogin`. The BSD `rc.d` script now follows the same switches
+  (`BSD_FOUND`), so `-DMANUAL_INITS=ON` leaves it out on BSD too. On an OpenRC system that also has sysvinit,
+  check that `/etc/init.d/soniclogin` is the OpenRC script after upgrading.
 
 ### Log locations
 
@@ -79,6 +110,9 @@ GPL-2.0-or-later.
   - `/var/log/sonic/soniclogin.log` on OpenRC and dinit;
   - `/var/log/sonic/soniclogin/` on runit (`svlogd`) and s6 (`s6-log`);
   - the journal on systemd.
+- **sonic-firewall's daemon and helpers** log to the journal on systemd. Elsewhere the daemon writes
+  `/var/log/sonic/sonic-firewall-service.log`, and the helpers write `/var/log/sonic/kde_ufw_plugin_helper.log`
+  and `/var/log/sonic/kcm_firewall_service_helper.log`; cover them in your logrotate rules.
 - **Old log files are deleted once, on first start:**
   - `/var/log/sonic-login-manager.log`;
   - `~/.local/state/sonic/desktop-interface.log`;
@@ -142,7 +176,9 @@ Frameworks 6.30.0, System 26.08.0.
 
 ### Packages removed
 
-- **sonic-plasma5-support-library.** No SonicDE package needs the Plasma 5 or Qt 5 support libraries any more. Drop the package and remove it from your dependency lists.
+- **sonic-plasma5-support-library.** No SonicDE package needs the Plasma 5 or Qt 5 support libraries any
+  more, so remove it from your SonicDE packages' dependency lists. KDE applications that still need it can use
+  KDE's own `plasma5support` package from your distribution; SonicDE doesn't have to provide it.
 
 ### Dependency changes
 
@@ -430,7 +466,7 @@ yet ship in the upcoming release or aren't built on their own.
 | sonic-oxygen-sounds | 6.7.3 | 6.7.3 |
 | sonic-partition-manager | 26.08.0 | 6.7.5 |
 | sonic-pipewire | 6.7.3 | 6.7.3 |
-| sonic-plasma5-support-library | 6.7.3 | 6.7.3 (removed in 6.7.5) |
+| sonic-plasma5-support-library | 6.7.3 | 6.7.3 (removed in 6.7.5; last tagged 6.8.0) |
 | sonic-polkit | 0.201.1 | 6.7.3 |
 | sonic-polkit-agent | 6.7.3 | 6.7.3 |
 | sonic-power-management | 6.8.0 | 6.8.0 |
