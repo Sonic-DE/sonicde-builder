@@ -30,6 +30,9 @@ build-depends:
 depends:
     - sonicde/sonic-frameworks-auth
     - sonicde/sonic-frameworks-core-addons
+    - sonicde/sonic-frameworks-init-info
     - sonicde/sonic-frameworks-internationalization
+    - sonicde/sonic-frameworks-ipc
+    - sonicde/sonic-frameworks-logging
     - sonicde/sonic-frameworks-settings
     - sonicde/sonic-frameworks-settings-utils
