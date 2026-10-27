@@ -20,6 +20,7 @@ sonicde-builder-wip/
 ├── build-all                          # full build: config -> validate -> generate -> cmake
 ├── build-repo                         # one repository + its dependents + their prerequisites
 ├── check-new-repos                    # compare GitHub org listing against managed repos
+├── release-notes-changes              # list SonicDE changes since each repo's last release
 ├── fetch                              # fetch one repository argument
 ├── fetch-all                          # fetch all active repositories through fetch
 ├── generate-depgraph                 # generate DOT dependency graph
@@ -138,12 +139,72 @@ Replace the older methods when you find them:
   `ecm_qt_declare_logging_category` and `ecm_qt_install_logging_categories`;
 - custom `qInstallMessageHandler` handlers and per-program log files.
 
-Remove the generated category headers and `.categories` files along with them.
+Remove the generated category headers and `.categories` files along with them,
+and the `#include <QDebug>`, `<QtDebug>` and `<QLoggingCategory>` lines that
+only served the old calls. `<Sonic/Logging/Log>` already brings in what the
+macros need. Keep such an include only when the file uses the type itself, for
+example to declare a `QDebug operator<<`.
 
 Plain `qDebug()`, `qInfo()`, `qWarning()` and `qCritical()` are only for code
 that can't depend on Sonic Logging. Keep a Qt logging category only when there
 is a concrete reason, such as an upstream API that requires one, and say why in
 a comment.
+
+## Communication Between SonicDE Components
+
+SonicDE components talk to each other through **Sonic IPC**
+(`sonic-frameworks-ipc`, `Sonic::Ipc`): framed messages over Unix domain
+sockets, with no message bus. During regular development, whenever you come
+across **internal-only** D-Bus communication, replace it with Sonic IPC.
+
+Internal-only means both ends ship in SonicDE and nothing outside SonicDE
+calls the interface. Examples already converted: the keyboard layout applet and
+the keyboard service; the login manager's greeter, settings page and helper;
+the screen locker and its unlock screen.
+
+If software outside our repositories takes part, as client or as server, the
+D-Bus side stays. If only SonicDE components use it, it goes.
+
+- **A D-Bus client is easy to judge:** it's external when the service it calls
+  isn't provided by one of our repositories (logind, NetworkManager, UPower,
+  polkit, a third-party application, ...).
+- **A D-Bus server we export needs evidence**, because any program can call it.
+  Treat it as external if any of these is true:
+  1. It's a freedesktop.org or other published interface, such as
+     notifications, the screen saver, status notifier items, MPRIS or portals.
+  2. Its interface XML is installed into the D-Bus interfaces directory, which
+     offers it as public API.
+  3. A source search finds callers outside our repositories. Search
+     <https://codesearch.debian.net> for the service name, object path and
+     interface name. A hit in software we don't ship counts as external; a hit
+     in the upstream package one of our repositories forked doesn't. Search
+     our own repositories too, so you know every internal caller.
+  4. It's an `org.kde.*`, `kde.*` or `kf6.*` interface or service
+     (including installed interface files with those prefixes, such as
+     `kf6_org.freedesktop.ScreenSaver.xml`) that upstream KDE applications call. Users install those applications alongside SonicDE,
+     so they are external consumers.
+
+  Watching the bus on the test VM (`busctl --user monitor <service>`, then
+  `busctl status <sender>`) shows who calls it there. Use it as supporting
+  evidence only, because it only sees what's installed.
+- **When you're unsure, keep the D-Bus server** and move our own clients to
+  Sonic IPC. Remove the server later, once nothing external has turned up, and
+  say in the change what you checked.
+
+When you convert an interface:
+
+- Change both ends in the same change, and remove the D-Bus XML, adaptors and
+  interface classes that only served it.
+- Put the message types and a protocol version in one shared header, and send
+  each message as one frame (see `IpcProtocol.h` in sonic-desktop-interface's
+  keyboard layout applet).
+- Listen on `Server::userSocketPath("<name>.sock")` with `Access::User`. A
+  privileged server checks the peer credentials of each connection.
+- Raise the protocol version on any incompatible change. Note in the packager
+  release notes if a restart is needed after upgrading, and in the package's
+  `RELEASE-NOTES.md` if users will notice.
+- Add the `sonicde/sonic-frameworks-ipc` dependency to the manifest, link
+  `Sonic::Ipc`, and test both ends.
 
 ## Release Notes
 
@@ -158,6 +219,12 @@ reporting the task complete.**
 - List only SonicDE's own changes, the ones that differ from upstream. Leave
   out anything that came from an upstream sync. Tags that start with `v`, such
   as `v6.8.0`, are upstream releases, not ours.
+- Only note fixes to code that has shipped. A fix to something still waiting
+  for release (a new feature, or a whole new package, that's only under
+  `## Unreleased`) is part of that pending change, not a new item: leave it
+  out, or reword the existing bullet if the fix changes what it says. Check
+  with `git tag --contains <commit>` on the commit that introduced the broken
+  code; no SonicDE release tag means it hasn't shipped.
 - A release with no SonicDE changes keeps its heading, with the line "No
   SonicDE-specific changes in this release; it brings the package up to date
   with upstream."
@@ -167,6 +234,16 @@ reporting the task complete.**
 - Give each change its own bullet. Changes users can't see (build tooling,
   code cleanups, version bumps, tests) get one short "Behind the scenes" bullet
   per release instead of one each.
+
+Release order for a group (`core`, `frameworks` or `system`):
+
+1. `./version-bump-<group> <version>` commits and pushes the version bump.
+2. `/release-notes <group> <version>` (the `release-notes` skill) writes the
+   release's sections from `./release-notes-changes <group>`, which lists
+   SonicDE's own changes since each repository's last release.
+3. After review, `./version-bump-tag-<group> <version>` commits and pushes each
+   repository's `RELEASE-NOTES.md` to master, then tags that commit. It refuses
+   to tag a repository whose notes have no section for the version.
 
 The builder root's `RELEASE-NOTES.md` is different: it's for packagers and is
 organised by release, newest first. When a task adds, renames or removes a
