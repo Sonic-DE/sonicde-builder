@@ -99,6 +99,13 @@ def generate_cmake(model: dict, out_file: Path, staging_root: Path | None = None
             # staged dependencies must replace same-named system packages.
             cmake_args.append("-UCMAKE_STAGING_PREFIX")
             cmake_args.append("-U*_DIR")
+            # ECM's RPATH settings copy every link directory outside the project into the installed RUNPATH,
+            # which here is the staging copy: a user-writable directory that root programs would load from.
+            # Point the RUNPATH at the final prefix instead; /usr's library directory needs none.
+            cmake_args.append("-DKDE_SKIP_RPATH_SETTINGS=ON")
+            if install_prefix != "/usr":
+                prefix = install_prefix.rstrip("/")
+                cmake_args.append(f"-DCMAKE_INSTALL_RPATH={prefix}/lib64:{prefix}/lib")
         cmake_args += pkg.get("cmake_extra_args", [])
 
         # Escape args for CMake

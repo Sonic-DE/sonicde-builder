@@ -138,6 +138,31 @@ class TestGenerateCMake(unittest.TestCase):
         self.assertGreaterEqual(block.count('"${CMAKE_COMMAND}" -S <SOURCE_DIR> -B <BINARY_DIR>'), 2)
         self.assertIn("COMMAND", block.split("BUILD_COMMAND", 1)[1])
 
+    def test_staged_build_never_points_runpath_at_the_stage(self):
+        """Staged builds turn off ECM's link-path RPATH; only a non-/usr prefix gets its own lib dirs."""
+        model = self._model(
+            {"sonicde/a": {"buildsystem": "cmake", "git": {}}}, [], ["sonicde/a"])
+        out = self.root / "out.cmake"
+        generate_cmake(model, out, staging_root=self.root / "stage")
+        text = out.read_text()
+        prefix = str(self.root / "prefix")
+        self.assertIn('"-DKDE_SKIP_RPATH_SETTINGS=ON"', text)
+        self.assertIn(f'"-DCMAKE_INSTALL_RPATH={prefix}/lib64:{prefix}/lib"', text)
+        self.assertNotIn(f"-DCMAKE_INSTALL_RPATH={self.root / 'stage'}", text)
+
+        model["install_prefix"] = "/usr"
+        generate_cmake(model, out, staging_root=self.root / "stage")
+        text = out.read_text()
+        self.assertIn('"-DKDE_SKIP_RPATH_SETTINGS=ON"', text)
+        self.assertNotIn("CMAKE_INSTALL_RPATH", text)
+
+    def test_unstaged_build_keeps_ecm_rpath_settings(self):
+        model = self._model(
+            {"sonicde/a": {"buildsystem": "cmake", "git": {}}}, [], ["sonicde/a"])
+        out = self.root / "out.cmake"
+        generate_cmake(model, out)
+        self.assertNotIn("KDE_SKIP_RPATH_SETTINGS", out.read_text())
+
     def test_package_parallelism_is_bounded_in_inner_build(self):
         model = self._model(
             {"sonicde/a": {"buildsystem": "cmake", "git": {}}}, [], ["sonicde/a"])

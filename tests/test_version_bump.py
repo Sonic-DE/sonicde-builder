@@ -555,6 +555,56 @@ class TestTagOnlyReleases(VersionBumpTestBase):
         self.assertIn("6.7.6", self._tags(repo))
         self.assertEqual(self._tags(self._origin("sonic-assets")), [])
 
+    def test_pending_release_notes_are_published_and_tagged(self):
+        repo = self._make_repo("sonic-notes", None, category="plasma")
+        notes = "# Sonic Notes Release Notes\n\n## 6.7.6 (2026-11-01)\n\n- Better things.\n"
+        (repo / "RELEASE-NOTES.md").write_text(notes)
+        (repo / "scratch.txt").write_text("unrelated local file\n")
+        result = self._run_tag("plasma", "6.7.6")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        # The tag is on a commit that carries exactly the notes, and origin has both.
+        self.assertEqual(git(repo, "show", "6.7.6:RELEASE-NOTES.md").stdout, notes)
+        self.assertEqual(git(repo, "show", "--name-only", "--format=", "6.7.6").stdout.split(), ["RELEASE-NOTES.md"])
+        origin = self._origin("sonic-notes")
+        self.assertEqual(git(origin, "rev-parse", "6.7.6^{commit}").stdout,
+                         git(origin, "rev-parse", "master").stdout)
+        self.assertIn("scratch.txt", git(repo, "status", "--porcelain").stdout)
+
+    def test_release_notes_without_a_section_for_the_version_are_not_tagged(self):
+        for heading in ("## Unreleased", "## 6.7.6.1 (2026-11-02)"):
+            with self.subTest(heading=heading):
+                name = f"sonic-notes-{len(heading)}"
+                repo = self._make_repo(name, None, category="plasma")
+                (repo / "RELEASE-NOTES.md").write_text(f"# Notes\n\n{heading}\n\n- Change.\n")
+                git(repo, "add", "RELEASE-NOTES.md")
+                git(repo, "commit", "-m", "notes")
+                git(repo, "push", "origin", "HEAD:refs/heads/master")
+                result = self._run_tag("plasma", "6.7.6")
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn("has no section for 6.7.6", result.stderr)
+                self.assertNotIn("6.7.6", self._tags(repo))
+                self.assertEqual(self._tags(self._origin(name)), [])
+                # Each case lists only its own repository.
+                (self.root / "scripts" / "version-repos-plasma.list").write_text("")
+
+    def test_pending_release_notes_are_not_tagged_without_push(self):
+        repo = self._make_repo("sonic-notes", None, category="plasma")
+        (repo / "RELEASE-NOTES.md").write_text("## 6.7.6 (2026-11-01)\n\n- Change.\n")
+        result = self._run_tag("plasma", "6.7.6", ["--no-push"])
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("unpublished changes", result.stderr)
+        self.assertEqual(self._tags(repo), [])
+        self.assertEqual(len(git(repo, "log", "--oneline").stdout.splitlines()), 1)
+
+    def test_dry_run_reports_pending_release_notes_without_committing(self):
+        repo = self._make_repo("sonic-notes", None, category="plasma")
+        (repo / "RELEASE-NOTES.md").write_text("## 6.7.6 (2026-11-01)\n\n- Change.\n")
+        result = self._run_tag("plasma", "6.7.6", ["--dry-run"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("would commit and push RELEASE-NOTES.md", result.stdout)
+        self.assertEqual(len(git(repo, "log", "--oneline").stdout.splitlines()), 1)
+        self.assertEqual(self._tags(repo), [])
+
     def test_independent_system_library_version_is_not_changed(self):
         content = 'cmake_minimum_required(VERSION 3.16)\nproject(libkexiv2 VERSION "5.1.0")\n'
         repo = self._make_repo("sonic-exiv2-library", content, category="system")

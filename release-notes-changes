@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
+# release-notes-changes - List SonicDE's own changes since each repository's last
+# SonicDE release, for writing RELEASE-NOTES.md before tagging. Read-only.
+#
+#   release-notes-changes core|frameworks|system
+#   release-notes-changes --repo sonic-login-manager [--repo ...]
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+exec python3 "$SCRIPT_DIR/scripts/release_notes.py" "$@"

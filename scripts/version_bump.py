@@ -178,6 +178,50 @@ def _prepare_origin_master(repo: Path) -> None:
     print(f"[{repo.name}] using master at origin/master ({remote[:12]})")
 
 
+RELEASE_NOTES = "RELEASE-NOTES.md"
+
+
+def _publish_release_notes(repo: Path, version: str, dry_run: bool, push: bool) -> str | None:
+    """Commit and push pending RELEASE-NOTES.md changes on master before tagging.
+
+    Only the release notes are committed, on master at origin/master, so the
+    tag lands on a commit that contains them. Returns the pending notes text
+    for a dry run, otherwise None.
+    """
+    pending = _git(repo, "status", "--porcelain", "--untracked-files=all", "--", RELEASE_NOTES)
+    if pending.returncode:
+        raise ValueError(f"cannot inspect {RELEASE_NOTES}: {pending.stderr.strip()}")
+    if not pending.stdout.strip():
+        return None
+    if dry_run:
+        print(f"[{repo.name}] would commit and push {RELEASE_NOTES} to master before tagging")
+        return (repo / RELEASE_NOTES).read_text(encoding="utf-8")
+    if not push:
+        raise ValueError(f"{RELEASE_NOTES} has unpublished changes; the tag would miss them without a push")
+
+    def run(*args: str) -> str:
+        result = _git(repo, *args)
+        if result.returncode:
+            raise ValueError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
+        return result.stdout.strip()
+
+    run("fetch", "--quiet", "--no-tags", "origin", "+refs/heads/master:refs/remotes/origin/master")
+    if _git(repo, "symbolic-ref", "--quiet", "HEAD").stdout.strip() != "refs/heads/master" \
+            or run("rev-parse", "HEAD") != run("rev-parse", "refs/remotes/origin/master"):
+        raise ValueError(f"{RELEASE_NOTES} can only be published from master at origin/master")
+    run("add", "--", RELEASE_NOTES)
+    run("commit", "--quiet", "-m", f"Release notes for {version}", "--", RELEASE_NOTES)
+    run("push", "--quiet", "--no-follow-tags", "origin", "HEAD:refs/heads/master")
+    print(f"[{repo.name}] committed and pushed {RELEASE_NOTES} for {version}")
+    return None
+
+
+def _check_release_notes(notes: str, version: str) -> None:
+    """Refuse to tag a release whose notes have no section for it."""
+    if not re.search(rf"^## {re.escape(version)}(?:[ \t]|$)", notes, re.MULTILINE):
+        raise ValueError(f"{RELEASE_NOTES} has no section for {version}; generate the release notes first")
+
+
 def _find_repos(root: Path, category: str) -> list[str]:
     """Read the maintained list; never infer membership from CMake or tags."""
     roster_category = "plasma" if category == "core" else category
@@ -197,7 +241,11 @@ def _find_repos(root: Path, category: str) -> list[str]:
 
 def _get_current_version(cmake: Path, category: str) -> str | None:
     """Extract the current version from a CMakeLists.txt."""
-    content = cmake.read_text(encoding="utf-8")
+    return version_from_cmake(cmake.read_text(encoding="utf-8"), category)
+
+
+def version_from_cmake(content: str, category: str) -> str | None:
+    """Extract the release version from CMakeLists.txt content."""
     if category == "system":
         majors = re.findall(
             rf'set\s*\(\s*{re.escape(SYSTEM_VARS[0])}\s+"([^"]*)"', content
@@ -394,13 +442,19 @@ def bump_category(
 
 def tag_category(root: Path, category: str, version: str,
                  dry_run: bool = False, push: bool = True) -> int:
-    """Tag only the accepted origin/master commit; never edit or commit files."""
+    """Tag the accepted origin/master commit; never edit CMake files.
+
+    Pending RELEASE-NOTES.md changes are committed and pushed to master first,
+    so the tag includes them. A repository that has release notes must have a
+    section for *version*.
+    """
     processed = failures = 0
     for name in _find_repos(root, category):
         repo = root / "src" / "sonicde" / name
         try:
             if not (repo / ".git").exists():
                 raise ValueError("repository checkout missing")
+            pending_notes = _publish_release_notes(repo, version, dry_run, push)
             if not dry_run:
                 _prepare_origin_master(repo)
 
@@ -421,6 +475,13 @@ def tag_category(root: Path, category: str, version: str,
                     updated = _replace_quoted_set(updated, "VERSION", version)
                 if updated != content.stdout:
                     raise ValueError(f"origin/master CMake version is not {version}; run the regular version-bump command first")
+
+            if pending_notes is not None:
+                _check_release_notes(pending_notes, version)
+            else:
+                notes = _git(repo, "show", f"{sha}:{RELEASE_NOTES}")
+                if notes.returncode == 0:
+                    _check_release_notes(notes.stdout, version)
 
             tag_ref = f"refs/tags/{version}"
             existing = _git(repo, "show-ref", "--verify", "--quiet", tag_ref)
@@ -479,7 +540,8 @@ def main(argv: list[str] | None = None) -> int:
         help="Do not push this operation's commits or tags to origin (push is the default)",
     )
     parser.add_argument("--tag-only", action="store_true",
-                        help="only tag accepted origin/master; do not update CMake or create commits")
+                        help="only tag accepted origin/master, after publishing pending RELEASE-NOTES.md; "
+                             "do not update CMake")
     parser.add_argument(
         "--list",
         action="store_true",

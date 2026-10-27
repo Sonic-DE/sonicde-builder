@@ -149,6 +149,50 @@ def test_staged_exported_target_resolves_to_staged_library(tmp_path):
     assert '"/usr/lib/libfixture.so"' not in targets
 
 
+def test_staged_install_runpath_never_names_the_stage(tmp_path):
+    """A consumer with ECM's RPATH behaviour, linked against a staged library, must not load from the stage."""
+    src = tmp_path / "src"
+    prereq = src / "prereq"
+    consumer = src / "consumer"
+    prereq.mkdir(parents=True)
+    consumer.mkdir(parents=True)
+    (prereq / "fixture.c").write_text("int fixture(void) { return 7; }\n")
+    (prereq / "FixtureConfig.cmake").write_text("include(${CMAKE_CURRENT_LIST_DIR}/FixtureTargets.cmake)\n")
+    (prereq / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(Prereq C)\n"
+        "add_library(fixture SHARED fixture.c)\n"
+        "install(TARGETS fixture EXPORT FixtureTargets LIBRARY DESTINATION lib)\n"
+        "install(EXPORT FixtureTargets NAMESPACE Fixture:: DESTINATION lib/cmake/Fixture)\n"
+        "install(FILES FixtureConfig.cmake DESTINATION lib/cmake/Fixture)\n")
+    (consumer / "main.c").write_text("int fixture(void); int main(void) { return fixture() != 7; }\n")
+    # The same switch and setting as ECM's KDECMakeSettings RPATH block.
+    (consumer / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.28)\nproject(Consumer C)\n"
+        "if(NOT KDE_SKIP_RPATH_SETTINGS)\n  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)\nendif()\n"
+        "find_package(Fixture CONFIG REQUIRED)\n"
+        "add_executable(consumer main.c)\ntarget_link_libraries(consumer PRIVATE Fixture::fixture)\n"
+        "install(TARGETS consumer RUNTIME DESTINATION bin)\n")
+    for prefix in ("/usr", str(tmp_path / "final")):
+        stage = tmp_path / f"stage-{len(prefix)}"
+        model = {"packages": {"prereq": {"buildsystem": "cmake"}, "consumer": {"buildsystem": "cmake"}},
+                 "topo_order": ["prereq", "consumer"],
+                 "edges": [{"dependent": "consumer", "prerequisite": "prereq", "kind": "depends"}],
+                 "source_root": str(src), "build_dir": str(tmp_path / f"packages-{len(prefix)}"),
+                 "install_prefix": prefix}
+        meta = tmp_path / f"meta-{len(prefix)}"
+        meta.mkdir()
+        generate_cmake(model, meta / "SonicDEProjects.cmake", staging_root=stage)
+        (meta / "CMakeLists.txt").write_text(
+            "cmake_minimum_required(VERSION 3.28)\nproject(Meta NONE)\ninclude(SonicDEProjects.cmake)\n")
+        subprocess.run(["cmake", "-S", str(meta), "-B", str(meta / "build"), "-G", "Ninja"],
+                       check=True, capture_output=True)
+        subprocess.run(["cmake", "--build", str(meta / "build")], check=True, capture_output=True)
+        installed = stage / prefix.lstrip("/") / "bin/consumer"
+        dynamic = subprocess.run(["readelf", "-d", str(installed)], check=True, capture_output=True, text=True).stdout
+        assert str(stage) not in dynamic
+        if prefix != "/usr":
+            assert f"{prefix}/lib" in dynamic
+
 def test_absolute_install_destination_is_redirected_before_full_build(tmp_path):
     src = tmp_path / "src/pkg"
     src.mkdir(parents=True)
