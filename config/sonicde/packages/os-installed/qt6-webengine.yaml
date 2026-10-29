@@ -1,0 +1,9 @@
+provides: sys/qt6-webengine
+type: system
+cmake-packages:
+    - Qt6WebEngineCore
+    - Qt6WebEngineQuick
+platform-packages:
+    debian: qt6-webengine-dev
+    devuan: qt6-webengine-dev
+    arch: qt6-webengine

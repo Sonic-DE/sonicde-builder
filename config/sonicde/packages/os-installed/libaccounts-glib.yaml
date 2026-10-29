@@ -1,0 +1,8 @@
+provides: sys/libaccounts-glib
+type: system
+pkg-config: libaccounts-glib
+
+platform-packages:
+    debian: libaccounts-glib-dev
+    devuan: libaccounts-glib-dev
+    arch: libaccounts-glib

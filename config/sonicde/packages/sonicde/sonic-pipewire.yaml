@@ -29,6 +29,8 @@ build-depends:
     - os-installed/libegl
     - os-installed/libepoxy
     - os-installed/libdrm
+    # The monitor autotests play sounds through a private PipeWire daemon.
+    - os-installed/pw-play
 
 depends:
     - os-installed/libva

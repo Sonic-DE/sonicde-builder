@@ -21,6 +21,8 @@ build-depends:
     - sonicde/sonic-frameworks-cmake-modules
     - os-installed/libx11
     - os-installed/libxcb
+    - os-installed/libwacom
+    - os-installed/xorg-wacom
 
 depends:
     - sonicde/sonic-frameworks-core-addons

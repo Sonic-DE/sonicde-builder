@@ -1,0 +1,7 @@
+provides: sys/xorg-wacom
+type: system
+pkg-config: xorg-wacom
+platform-packages:
+    debian: xserver-xorg-input-wacom
+    devuan: xserver-xorg-input-wacom
+    arch: xf86-input-wacom

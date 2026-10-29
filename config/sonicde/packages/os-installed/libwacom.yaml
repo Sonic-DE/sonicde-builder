@@ -1,0 +1,7 @@
+provides: sys/libwacom
+type: system
+pkg-config: libwacom
+platform-packages:
+    debian: libwacom-dev
+    devuan: libwacom-dev
+    arch: libwacom

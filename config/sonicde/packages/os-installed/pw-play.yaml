@@ -1,0 +1,9 @@
+provides: sys/pw-play
+type: system
+commands:
+    - pw-play
+    - pipewire
+platform-packages:
+    debian: pipewire-bin
+    devuan: pipewire-bin
+    arch: pipewire

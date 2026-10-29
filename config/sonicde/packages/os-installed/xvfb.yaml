@@ -1,0 +1,7 @@
+provides: sys/xvfb
+type: system
+commands: Xvfb
+platform-packages:
+    debian: xvfb
+    devuan: xvfb
+    arch: xorg-server-xvfb

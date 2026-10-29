@@ -1,0 +1,7 @@
+provides: sys/dbus-run-session
+type: system
+commands: dbus-run-session
+platform-packages:
+    debian: dbus-daemon
+    devuan: dbus-daemon
+    arch: dbus

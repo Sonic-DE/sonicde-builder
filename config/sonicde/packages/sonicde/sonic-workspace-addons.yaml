@@ -27,3 +27,7 @@ buildsystem: cmake
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
     - sonicde/sonic-frameworks-via
+
+depends:
+    - sonicde/sonic-frameworks-logging
+    - sonicde/sonic-workspace

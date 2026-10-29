@@ -27,6 +27,7 @@ buildsystem: cmake
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
     - os-installed/sdl3
+    - os-installed/qt6-webengine
 
 depends:
     - 3rdparty/qcoro6

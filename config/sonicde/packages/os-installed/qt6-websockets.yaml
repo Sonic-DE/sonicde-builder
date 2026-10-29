@@ -1,0 +1,7 @@
+provides: sys/qt6-websockets
+type: system
+cmake-packages: Qt6WebSockets
+platform-packages:
+    debian: qt6-websockets-dev
+    devuan: qt6-websockets-dev
+    arch: qt6-websockets

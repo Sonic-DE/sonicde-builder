@@ -23,3 +23,6 @@ sources:
 master_branch: master
 
 buildsystem: cmake
+
+depends:
+    - sys/libaccounts-glib
