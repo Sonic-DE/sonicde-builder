@@ -56,6 +56,10 @@ GPL-2.0-or-later.
 - **sonic-login-manager** now requires sonic-frameworks-init-info, sonic-frameworks-ipc and sonic-frameworks-logging.
 - **sonic-desktop-interface** and **sonic-screenlocker** now require sonic-frameworks-ipc and sonic-frameworks-logging.
 - **sonic-firewall** now requires sonic-frameworks-init-info, sonic-frameworks-ipc and sonic-frameworks-logging.
+- **sonic-workspace-addons** now requires sonic-frameworks-logging. Its new Sonic Menu widget needs
+  sonic-workspace at runtime (the Kicker and session QML modules); it replaces the kMenu widget from the KDE Store
+  and does not need Plasma5Support.
+- **sonic-terminal** now requires sonic-frameworks-logging.
 - **sonic-theme-sdk** no longer needs Plasma5Support. Its `plasmaengineexplorer` program, man page and
   translations are gone; drop them from your package's file list.
 
