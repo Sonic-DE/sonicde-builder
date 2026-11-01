@@ -12,6 +12,7 @@ howto:
 * fetch one Git repository: `./fetch sonic-browser-integration`
 * fetch all active Git repositories: `./fetch-all`
 * full build: `./build-all`
+* install the last build without rebuilding: `./install`
 * create dependency graph: `./generate-depgraph`
 * sync one repository (autopick): `./sync sonic-browser-integration`
 * sync all managed repositories: `./sync-all`
@@ -174,9 +175,10 @@ the variable, including repositories already at the requested version.
 build and system installation:
 ------------------------------
 
-Build into the solution's local prefix (the default remains `build/`):
+Build everything for `/usr`, then install it to the system:
 
     ./build-all --parallel 8
+    ./install
 
 The meta-build schedules one package at a time so nested Ninja processes cannot
 multiply the requested concurrency. `--parallel N` controls compilation inside
@@ -184,17 +186,19 @@ that package. Without it, the builder chooses a conservative value from availabl
 memory (roughly one job per 2 GiB after reserving 1 GiB, capped at eight). Set
 `SONICDE_BUILD_JOBS=N` for a persistent override.
 
-Build the full meta-build, then install its CMake packages to `/usr`:
+Or build and install in one command:
 
     ./build-all --install --parallel 8
 
 Select a different final destination with:
 
-    ./build-all --install --install-prefix /opt/sonicde --parallel 8
+    ./build-all --prefix /opt/sonicde --parallel 8
 
-With `--install`, packages are configured for the final destination, while every
-dependency installation during the build is redirected with `DESTDIR` under
-`state/install-stage/`. Later packages discover these staged dependencies.
+Packages are always configured for the final destination, while every
+installation during the build is redirected with `DESTDIR` under
+`state/install-stage/`. Later packages discover these staged dependencies, and
+programs built against them find them in `state/install-stage/usr` (or the
+chosen prefix under `state/install-stage/`).
 **No live-system installation starts until the entire meta-build succeeds.**
 If validation, configuration or any build fails, deployment is not run.
 Partial-target builds are not accepted by this wrapper.
@@ -202,16 +206,17 @@ Partial-target builds are not accepted by this wrapper.
 After the full build succeeds, the wrapper runs `sudo -v` to authenticate
 (prompting for a password when required by sudo policy), then runs only the
 installation helper under sudo. Cancelling or failing authentication prevents
-deployment. Configuration and compilation are not elevated. If deployment
-needs to be retried after a successful `--install` build, authenticate and run
-the deployment-only step from the workspace:
+deployment. Configuration and compilation are not elevated. `./install` is
+that deployment-only step, for any completed build:
 
-    sudo -v
-    sudo -- python3 scripts/install.py -model state/model.json
+    ./install
 
-Use that helper only with the model from the completed system-prefix build. It
-checks all package installation scripts and configured prefixes before starting,
-skips system/no-build packages, and stops on the first deployment error.
+It installs the packages of `state/model.json` to the prefix they were built
+for, without configuring or building. It checks all package installation
+scripts and configured prefixes before sudo authenticates, refuses a build
+configured for the builder's own `build/` directory (made before builds
+targeted the system prefix), skips system/no-build packages, and stops on the
+first deployment error.
 Deployment is not transactional: an install failure can leave earlier packages
 installed, although no packages are deployed while the meta-build is incomplete.
 
@@ -228,11 +233,10 @@ prerequisites; a low-level framework rebuilds much of the desktop. It accepts
 the same options as `build-all`, and `--install` deploys exactly the selected
 packages with the same full-build barrier. The selection is written to
 `state/build-model.json` and `state/build-depgraph.dot`, leaving the full
-solution's `state/model.json` untouched. To retry deployment after a successful
-`build-repo --install` build:
+solution's `state/model.json` untouched. To install a completed `build-repo`
+build:
 
-    sudo -v
-    sudo -- python3 scripts/install.py -model state/build-model.json
+    ./install --model state/build-model.json
 
 Both commands regenerate the shared superbuild in `build/` for their selection,
 so run `build-all` again before relying on a full-solution build tree.

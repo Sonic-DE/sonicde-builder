@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# install - deploy the packages of a completed build, without building
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+MODEL=state/model.json
+
+usage() {
+    cat <<'EOF'
+Usage: ./install [--model PATH]
+
+Installs the packages of the last completed `./build-all` to the system prefix
+it was built for (/usr unless built with --prefix). Nothing is configured or built.
+
+  --model PATH   Model of the build to install (default state/model.json).
+                 After `./build-repo REPOSITORY`, use state/build-model.json.
+  -h, --help     Show this help without installing.
+
+Every package is checked before sudo authenticates; an old build configured for
+the builder's own build/ directory is refused.
+EOF
+}
+
+while (($#)); do
+    case "$1" in
+        --model|-model)
+            [[ $# -ge 2 && -n "$2" ]] || { echo "$1 requires a path" >&2; exit 2; }
+            MODEL="$2"; shift 2 ;;
+        -h|--help) usage; exit 0 ;;
+        *) echo "Unsupported option: $1 (use --help)" >&2; exit 2 ;;
+    esac
+done
+[[ -f "$MODEL" ]] || { echo "No build model at $MODEL; run ./build-all first" >&2; exit 2; }
+MODEL="$(cd "$(dirname "$MODEL")" && pwd)/$(basename "$MODEL")"
+
+python3 scripts/install.py -model "$MODEL" --check
+echo "Authenticating for system installation..."
+sudo -v
+sudo -- python3 "$SCRIPT_DIR/scripts/install.py" -model "$MODEL"

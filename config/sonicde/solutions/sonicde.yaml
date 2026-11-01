@@ -1,5 +1,5 @@
 #
-# Build all SonicDE packages into the project-local build directory. Qt 6 is
+# Build all SonicDE packages for /usr, staged in state/install-stage. Qt 6 is
 # supplied by the operating system and is deliberately not fetched or built by
 # this solution.
 
@@ -22,7 +22,7 @@ plasma_git: https://invent.kde.org/plasma/
 sonic_depth: 0
 upstream_depth: 0
 
-install-prefix: ${@PROJECT::@rootdir}/build
+install-prefix: /usr
 
 # what to build (can use packages or provides here)
 # just listing all sonic repos alphabetically here

@@ -83,13 +83,15 @@ def test_failed_authentication_never_installs(wrapper):
     assert not any(any(arg.endswith("scripts/install.py") for arg in call) for call in calls)
 
 
-def test_default_does_not_deploy_or_change_prefix(wrapper):
+def test_default_builds_staged_for_usr_without_deploying(wrapper):
     result, calls = wrapper("--verbose")
     assert result.returncode == 0
     assert calls[-1] == ["cmake", "--build", "build", "--parallel", "1", "--verbose"]
     assert not any(call[0] == "sudo" for call in calls)
-    assert not any("--staging-root" in call or "scripts/install.py" in call for call in calls)
-    assert not any(arg.startswith("install-prefix=") for call in calls for arg in call)
+    assert not any("scripts/install.py" in arg for call in calls for arg in call)
+    assert "install-prefix=/usr" in calls[0]
+    generate = next(call for call in calls if "scripts/generate.py" in call)
+    assert generate[generate.index("--staging-root") + 1].endswith("/state/install-stage")
     assert not any("scripts/fetch.py" in call for call in calls)
     generate = next(call for call in calls if "scripts/generate.py" in call)
     assert generate[generate.index("--jobs") + 1] == "2"
@@ -113,8 +115,16 @@ def test_explicit_prefix_and_defines(wrapper):
     assert "kf6_version=v1" not in calls[-2]
 
 
+@pytest.mark.parametrize("option", ["--prefix", "--install-prefix"])
+def test_prefix_without_install(wrapper, option):
+    result, calls = wrapper(option, "/opt/sonicde")
+    assert result.returncode == 0, result.stderr
+    assert "install-prefix=/opt/sonicde" in calls[0]
+    assert not any(call[0] == "sudo" for call in calls)
+
+
 @pytest.mark.parametrize("args", [
-    ["--install-prefix"], ["--install-prefix", "/usr"],
+    ["--prefix"], ["--prefix", "relative"], ["--install-prefix"],
     ["--install", "--install-prefix", "relative"], ["--parallel", "no"],
     ["--install", "--target", "one-package"], ["--unknown"], ["--fetch"],
 ])

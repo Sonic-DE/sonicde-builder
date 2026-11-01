@@ -59,12 +59,26 @@ GPL-2.0-or-later.
 - **sonic-workspace-addons** now requires sonic-frameworks-logging. Its new Sonic Menu widget needs
   sonic-workspace at runtime (the Kicker and session QML modules); it replaces the kMenu widget from the KDE Store
   and does not need Plasma5Support.
-- **sonic-terminal** now requires sonic-frameworks-logging.
+- **sonic-terminal** now requires sonic-frameworks-logging, and at runtime sonic-frameworks-quick-ui (Kirigami) and
+  sonic-frameworks-quick-desktop-style.
 - **sonic-theme-sdk** no longer needs Plasma5Support. Its `plasmaengineexplorer` program, man page and
   translations are gone; drop them from your package's file list.
 
 ### Actions
 
+- **Upgrade sonic-qt-theme-bridge, sonic-frameworks-quick-ui, sonic-frameworks-quick-desktop-style,
+  sonic-frameworks-quick-silver-style and sonic-silver together.** The title bar and toolbar settings are now
+  shared, theme-independent settings (`[ToolsArea]` in `kdeglobals`) that all five read; Silver moves its users'
+  existing settings there once. No new packages to depend on, but sonic-qt-theme-bridge, sonic-silver and sonic-win
+  need the sonic-frameworks-color-scheme release with `KToolsArea` (below); sonic-frameworks-quick-ui adds API
+  (`Theme.toolsArea`) without breaking binary compatibility.
+- **License change: sonic-frameworks-color-scheme, sonic-frameworks-quick-ui, sonic-qt-theme-bridge,
+  sonic-frameworks-quick-desktop-style and sonic-frameworks-quick-silver-style now contain GPL-2.0-or-later code**
+  (the new tools-area files), so their binaries as a whole are GPL-2.0-or-later. Update the license field of those
+  packages.
+- **sonic-frameworks-color-scheme gains `KToolsArea`**, the one implementation of the shared titlebar and toolbar
+  transparency settings; sonic-silver, sonic-win and sonic-qt-theme-bridge use it. It adds API without breaking
+  binary compatibility; upgrade it with them.
 - **sonic-plasma5-support-library is no longer released.** It has left the Core release list, so it gets no
   new tags. Keep its 6.8.0 package or replace it with your distribution's KDE `plasma5support`.
 - **Restart the display manager after upgrading sonic-login-manager.** The greeter, the settings page and the helper now talk over a new protocol, and old and new versions can't talk to each other.

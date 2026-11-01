@@ -78,6 +78,16 @@ def test_full_solution_model_is_never_written(wrapper):
     assert not any(call[0] == "sudo" for call in calls)
     assert calls[-1] == ["cmake", "--build", "build", "--parallel", "1", "--verbose"]
 
+def test_default_builds_staged_for_usr_and_prefix_overrides(wrapper):
+    result, calls = wrapper("sonic-firewall")
+    assert result.returncode == 0, result.stderr
+    assert "install-prefix=/usr" in calls[0]
+    assert "--staging-root" in calls[3]
+    result, calls = wrapper("sonic-firewall", "--prefix", "/opt/sonicde")
+    assert result.returncode == 0, result.stderr
+    assert "install-prefix=/opt/sonicde" in calls[0]
+    assert not any(call[0] == "sudo" for call in calls)
+
 
 def test_failed_build_never_deploys(wrapper):
     result, calls = wrapper("sonic-firewall", "--install", fail=True)
@@ -93,7 +103,7 @@ def test_resolution_failure_stops_pipeline(wrapper):
 
 @pytest.mark.parametrize("args", [
     [], ["--install"], ["-j", "2"], ["bad name"], ["../escape"],
-    ["sonic-firewall", "--install-prefix", "/usr"], ["sonic-firewall", "--parallel", "no"],
+    ["sonic-firewall", "--prefix", "relative"], ["sonic-firewall", "--parallel", "no"],
     ["sonic-firewall", "--unknown"], ["sonic-firewall", "--install", "--install-prefix", "relative"],
 ])
 def test_bad_arguments_do_not_start_pipeline(wrapper, args):

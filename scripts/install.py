@@ -15,6 +15,9 @@ def install_directories(model: dict) -> list[Path]:
     directories = []
     build_root = Path(model["build_dir"]).resolve()
     expected_prefix = Path(model["install_prefix"])
+    if expected_prefix.resolve().is_relative_to(build_root):
+        raise ValueError(f"The model targets the builder's own prefix {expected_prefix}; "
+                         "run ./build-all to rebuild for the system prefix")
     for name in model["topo_order"]:
         package = model["packages"][name]
         if package.get("type") == "system" or package.get("buildsystem") == "none":
@@ -38,10 +41,15 @@ def install_directories(model: dict) -> list[Path]:
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("-model", default="state/model.json")
+    parser.add_argument("--check", action="store_true",
+                        help="only run the preflight checks, installing nothing")
     args = parser.parse_args(argv)
     try:
         model = json.loads(Path(args.model).read_text())
         directories = install_directories(model)
+        if args.check:
+            print(f"{len(directories)} package(s) ready to install to {model['install_prefix']}")
+            return 0
         for directory in directories:
             print(f"Installing {directory} -> {model['install_prefix']}", flush=True)
             subprocess.run(["cmake", "--install", str(directory)], check=True)

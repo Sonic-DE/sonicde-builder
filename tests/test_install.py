@@ -272,3 +272,31 @@ def test_deployment_stops_on_first_error(tmp_path, monkeypatch):
     monkeypatch.setattr("install.subprocess.run", fail)
     assert main(["-model", str(path)]) == 1
     assert calls == [["cmake", "--install", str(tmp_path / "a")]]
+
+
+def test_local_build_prefix_is_rejected(tmp_path):
+    package = tmp_path / "pkg"
+    package.mkdir()
+    (package / "CMakeCache.txt").write_text(f"CMAKE_INSTALL_PREFIX:PATH={tmp_path}\n")
+    (package / "cmake_install.cmake").touch()
+    model = {"build_dir": str(tmp_path), "install_prefix": str(tmp_path), "topo_order": ["pkg"],
+             "packages": {"pkg": {"buildsystem": "cmake"}}}
+    with pytest.raises(ValueError, match="builder's own prefix"):
+        install_directories(model)
+
+
+def test_check_installs_nothing(tmp_path, monkeypatch):
+    package = tmp_path / "pkg"
+    package.mkdir()
+    (package / "CMakeCache.txt").write_text("CMAKE_INSTALL_PREFIX:PATH=/usr\n")
+    (package / "cmake_install.cmake").touch()
+    model = {"build_dir": str(tmp_path), "install_prefix": "/usr", "topo_order": ["pkg"],
+             "packages": {"pkg": {"buildsystem": "cmake"}}}
+    path = tmp_path / "model.json"
+    path.write_text(json.dumps(model))
+    calls = []
+    monkeypatch.setattr("install.subprocess.run", lambda *args, **kwargs: calls.append(args))
+    assert main(["-model", str(path), "--check"]) == 0
+    assert calls == []
+    (package / "cmake_install.cmake").unlink()
+    assert main(["-model", str(path), "--check"]) == 1
