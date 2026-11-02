@@ -10,6 +10,8 @@ import re
 import sys
 from pathlib import Path
 
+RESET_STALE_CACHE = Path(__file__).resolve().parent / "reset_stale_cache.cmake"
+
 
 def sanitize_target(name: str) -> str:
     """Generate a stable sanitized CMake target name."""
@@ -133,7 +135,9 @@ def generate_cmake(model: dict, out_file: Path, staging_root: Path | None = None
                 f'"QML_IMPORT_PATH={search_prefix}/lib64/qml:{search_prefix}/lib/qml:$ENV{{QML_IMPORT_PATH}}" '
                 f'"QML2_IMPORT_PATH={search_prefix}/lib64/qml:{search_prefix}/lib/qml:$ENV{{QML2_IMPORT_PATH}}"'
             )
-            configure_cmd = (f'"${{CMAKE_COMMAND}}" -E env {staged_env} '
+            reset_cmd = (f'"${{CMAKE_COMMAND}}" "-DBINARY_DIR=<BINARY_DIR>" "-DINSTALL_PREFIX={install_prefix}" '
+                         f'-P "{RESET_STALE_CACHE}"')
+            configure_cmd = (f'{reset_cmd} COMMAND "${{CMAKE_COMMAND}}" -E env {staged_env} '
                              f'"${{CMAKE_COMMAND}}" -S <SOURCE_DIR> -B <BINARY_DIR> {cmake_args_str}')
             install_cmd = (f'"${{CMAKE_COMMAND}}" -E env {staged_env} "DESTDIR={staging_root}" '
                            f'"${{CMAKE_COMMAND}}" --build <BINARY_DIR>{parallel_arg} --target install')

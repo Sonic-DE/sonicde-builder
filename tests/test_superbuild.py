@@ -12,7 +12,7 @@ from pathlib import Path
 SCRIPTS = Path(__file__).parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-from generate import generate_cmake, generate_dot, sanitize_target
+from generate import RESET_STALE_CACHE, generate_cmake, generate_dot, sanitize_target
 
 
 class TestGenerateCMake(unittest.TestCase):
@@ -137,6 +137,47 @@ class TestGenerateCMake(unittest.TestCase):
         self.assertIn("BUILD_COMMAND", block)
         self.assertGreaterEqual(block.count('"${CMAKE_COMMAND}" -S <SOURCE_DIR> -B <BINARY_DIR>'), 2)
         self.assertIn("COMMAND", block.split("BUILD_COMMAND", 1)[1])
+
+    def test_staged_configure_resets_caches_from_another_prefix_first(self):
+        model = self._model(
+            {"sonicde/a": {"buildsystem": "cmake", "git": {}},
+             "sonicde/b": {"buildsystem": "cmake", "git": {}}}, [], ["sonicde/a", "sonicde/b"])
+        out = self.root / "out.cmake"
+        generate_cmake(model, out, staging_root=self.root / "stage")
+        text = out.read_text()
+        configures = text.count('"${CMAKE_COMMAND}" -S <SOURCE_DIR> -B <BINARY_DIR>')
+        resets = text.count(f'"-DINSTALL_PREFIX={self.root / "prefix"}" -P "{RESET_STALE_CACHE}"')
+        self.assertGreater(configures, 0)
+        self.assertEqual(resets, configures)
+        # Each configure is preceded by its own reset.
+        for block in text.split("ExternalProject_add(")[1:]:
+            for before in block.split("-S <SOURCE_DIR>")[:-1]:
+                self.assertIn("reset_stale_cache.cmake", before)
+
+    def test_reset_script_only_keeps_trees_configured_for_the_current_prefix(self):
+        def reset(tree):
+            subprocess.run(["cmake", f"-DBINARY_DIR={tree}", "-DINSTALL_PREFIX=/usr", "-P", str(RESET_STALE_CACHE)],
+                           check=True, capture_output=True)
+
+        # The cache always names the current prefix; only the marker shows what the tree was set up for.
+        for marker, kept in (("/usr", True), (str(self.root / "old"), False), (None, False)):
+            tree = self.root / f"tree-{marker is None}-{kept}"
+            (tree / "CMakeFiles").mkdir(parents=True)
+            (tree / "CMakeCache.txt").write_text("CMAKE_INSTALL_PREFIX:PATH=/usr\n")
+            if marker is not None:
+                (tree / ".sonicde-install-prefix").write_text(marker)
+            reset(tree)
+            self.assertEqual((tree / "CMakeCache.txt").exists(), kept)
+            self.assertEqual((tree / "CMakeFiles").exists(), kept)
+            self.assertEqual((tree / ".sonicde-install-prefix").read_text(), "/usr")
+            # A tree once reset is kept from then on.
+            (tree / "CMakeCache.txt").write_text("CMAKE_INSTALL_PREFIX:PATH=/usr\n")
+            reset(tree)
+            self.assertTrue((tree / "CMakeCache.txt").exists())
+        empty = self.root / "empty"
+        empty.mkdir()
+        reset(empty)
+        self.assertEqual((empty / ".sonicde-install-prefix").read_text(), "/usr")
 
     def test_staged_build_never_points_runpath_at_the_stage(self):
         """Staged builds turn off ECM's link-path RPATH; only a non-/usr prefix gets its own lib dirs."""
