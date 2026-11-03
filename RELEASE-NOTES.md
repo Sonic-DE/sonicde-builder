@@ -63,6 +63,10 @@ GPL-2.0-or-later.
   sonic-frameworks-quick-desktop-style.
 - **sonic-theme-sdk** no longer needs Plasma5Support. Its `plasmaengineexplorer` program, man page and
   translations are gone; drop them from your package's file list.
+- **sonic-frameworks-doctools** now requires sonic-frameworks-logging; build it first. It installs a new
+  program, `docbook2markdown6`, which turns QDoc's DocBook output for SonicDE's libraries into Markdown pages
+  for the API reference on sonicde.org; add it to your package's file list. It needs no new dependencies. Its `kf.doctools.core` logging category is
+  gone (its programs log through Sonic Logging now), so drop any `QT_LOGGING_RULES` that name it.
 
 ### Actions
 
