@@ -23,6 +23,7 @@ sonicde-builder-wip/
 ├── release-notes-changes              # list SonicDE changes since each repo's last release
 ├── fetch                              # fetch one repository argument
 ├── fetch-all                          # fetch all active repositories through fetch
+├── generate-api-docs                  # QDoc + docbook2markdown6: API reference Markdown for sonicde.org
 ├── generate-depgraph                 # generate DOT dependency graph
 ├── install-deps                       # list OS packages needed by active system deps
 ├── merge-graphs                       # merge per-project graphify graphs into root graph
@@ -42,6 +43,7 @@ sonicde-builder-wip/
 │   ├── validate.py                    # validate system deps (pkg-config) and Qt6 Core
 │   ├── generate.py                    # generate CMake ExternalProject superbuild + DOT
 │   ├── sync_tags.py                   # mirror upstream tags onto SonicDE commits
+│   ├── api_docs.py                    # API reference from every build's ecm_generate_qdoc() modules
 │   └── git-autopick                   # upstream sync (rebase tracker range onto master)
 ├── src/
 │   ├── 3rdparty/<project>/            # one independent Git repository per project

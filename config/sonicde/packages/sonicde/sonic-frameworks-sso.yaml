@@ -23,3 +23,6 @@ sources:
 master_branch: master
 
 buildsystem: cmake
+
+build-depends:
+    - sonicde/sonic-frameworks-cmake-modules

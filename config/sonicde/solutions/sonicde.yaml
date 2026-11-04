@@ -41,6 +41,7 @@ build:
     - sonicde/sonic-decoration
     - sonicde/sonic-desktop-interface
     - sonicde/sonic-disks
+    - sonicde/sonic-docs
     - sonicde/sonic-dr-robotnik
     - sonicde/sonic-drawing-tablet
     - sonicde/sonic-ecco

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
+# generate-api-docs - Generate the SonicDE API reference (Markdown for sonicde.org) from every
+# built library's QDoc documentation, into api/ of the sonic-docs checkout (./fetch sonic-docs).
+# Needs a configured build (./build-all or ./build-repo).
+#
+#   generate-api-docs [--repo NAME ...] [--output DIR] [--jobs N]
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+exec python3 "$SCRIPT_DIR/scripts/api_docs.py" "$@"

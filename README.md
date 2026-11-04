@@ -14,6 +14,12 @@ howto:
 * full build: `./build-all`
 * install the last build without rebuilding: `./install`
 * create dependency graph: `./generate-depgraph`
+* generate the API reference for sonicde.org from every built library (needs a build including
+  sonic-frameworks-doctools, and Qt's documentation with its `.index` files installed where
+  `qtpaths6 --query QT_INSTALL_DOCS` says) into `src/sonicde/sonic-docs/api`:
+  `./fetch sonic-docs`, then `./generate-api-docs`; commit and push sonic-docs to publish it.
+  Later runs only redo libraries whose source changed (and those linking to their changed API);
+  `--full` redoes everything
 * sync one repository (autopick): `./sync sonic-browser-integration`
 * sync all managed repositories: `./sync-all`
 * reset repos after merged PRs: `./sync-success-cleanup`
