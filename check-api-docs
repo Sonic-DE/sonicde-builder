@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
+# check-api-docs - Check the API reference that generate-api-docs wrote before publishing it:
+# internal links and anchors, Qt links against the installed Qt documentation, and a page,
+# all-members page, module listing and contents entry for every documented class. Runs offline.
+#
+#   check-api-docs [--reference DIR] [--work DIR] [--qt-docs DIR]
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+exec python3 "$SCRIPT_DIR/scripts/api_docs_check.py" "$@"

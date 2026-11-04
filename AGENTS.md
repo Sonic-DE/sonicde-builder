@@ -19,6 +19,7 @@ sonicde-builder-wip/
 ├── sync-tags                         # mirror upstream release tags onto SonicDE commits
 ├── build-all                          # full build: config -> validate -> generate -> cmake
 ├── build-repo                         # one repository + its dependents + their prerequisites
+├── check-api-docs                     # offline checks of the generated API reference before publishing
 ├── check-new-repos                    # compare GitHub org listing against managed repos
 ├── release-notes-changes              # list SonicDE changes since each repo's last release
 ├── fetch                              # fetch one repository argument
@@ -44,6 +45,7 @@ sonicde-builder-wip/
 │   ├── generate.py                    # generate CMake ExternalProject superbuild + DOT
 │   ├── sync_tags.py                   # mirror upstream tags onto SonicDE commits
 │   ├── api_docs.py                    # API reference from every build's ecm_generate_qdoc() modules
+│   ├── api_docs_check.py              # links, Qt links and class coverage of the API reference
 │   └── git-autopick                   # upstream sync (rebase tracker range onto master)
 ├── src/
 │   ├── 3rdparty/<project>/            # one independent Git repository per project
