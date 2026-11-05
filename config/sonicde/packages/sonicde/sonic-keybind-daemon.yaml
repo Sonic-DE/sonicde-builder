@@ -36,5 +36,6 @@ depends:
     - sonicde/sonic-frameworks-dbus
     - sonicde/sonic-frameworks-io
     - sonicde/sonic-frameworks-keybind
+    - sonicde/sonic-frameworks-logging
     - sonicde/sonic-frameworks-settings
     - sonicde/sonic-frameworks-windowsystem
