@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Replaces Qt's file of this name, whose CMake snippet can only name a module of the Qt6 package.
+
+//! [using the c++ api]
+    Using the module's C++ API requires linking against its library, either
+    directly or through other dependencies.
+//! [using the c++ api]
+
+//! [building with cmake]
+    Use the \c {find_package()} command to locate the library, and link your
+    target against it:
+
+    \code
+    find_package(\1 REQUIRED COMPONENTS \2)
+    target_link_libraries(mytarget PRIVATE \3)
+    \endcode
+
+    The \c KF6 package is found through extra-cmake-modules: first call
+    \c {find_package(ECM REQUIRED NO_MODULE)} and add \c {ECM_MODULE_PATH} to
+    \c {CMAKE_MODULE_PATH}.
+//! [building with cmake]
+
+//! [building with cmake nomodule]
+    Use the \c {find_package()} command to locate the library, and link your
+    target against it:
+
+    \code
+    find_package(\1 REQUIRED)
+    target_link_libraries(mytarget PRIVATE \2)
+    \endcode
+//! [building with cmake nomodule]

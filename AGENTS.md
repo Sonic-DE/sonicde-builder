@@ -31,6 +31,7 @@ sonicde-builder-wip/
 ├── reset-trackers                     # reset autopick trackers (recovery, --yes required)
 ├── repo-list                          # generated compatibility artifact
 ├── config/
+│   ├── qdoc/                          # QDoc includes that replace Qt's for the API reference
 │   ├── repos.list                     # maintained SonicDE repository inventory
 │   └── sonicde/
 │       ├── solutions/sonicde.yaml     # active solution (build list, prefix, env, fetch)

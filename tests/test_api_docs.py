@@ -4,6 +4,7 @@
 output directories, failure handling, and replacing the published folder. QDoc and the converter
 are stand-in scripts that record how they were called."""
 import os
+import re
 import stat
 import sys
 import tempfile
@@ -28,6 +29,33 @@ def write_script(path: Path, body: str) -> str:
     path.write_text("#!/usr/bin/env bash\n" + body)
     path.chmod(path.stat().st_mode | stat.S_IEXEC)
     return str(path)
+
+
+class TemplatesTest(unittest.TestCase):
+    def test_overlay_keeps_qt_files_and_replaces_module_use(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            qt_docs = Path(tmp) / "qt"
+            (qt_docs / "global" / "includes").mkdir(parents=True)
+            (qt_docs / "global" / "defaults.qdocconf").write_text("qt\n")
+            (qt_docs / "global" / "includes" / "other.qdocinc").write_text("qt\n")
+            (qt_docs / "global" / "includes" / api_docs.MODULE_USE.name).write_text("qt\n")
+            target = Path(tmp) / "templates"
+            for _ in range(2):  # a later run replaces the earlier overlay
+                api_docs.overlay_templates(qt_docs, target)
+            self.assertEqual((target / "global" / "defaults.qdocconf").read_text(), "qt\n")
+            self.assertEqual((target / "global" / "includes" / "other.qdocinc").read_text(), "qt\n")
+            self.assertEqual((target / "global" / "includes" / api_docs.MODULE_USE.name).read_text(),
+                             api_docs.MODULE_USE.read_text())
+            self.assertEqual((qt_docs / "global" / "includes" / api_docs.MODULE_USE.name).read_text(), "qt\n")
+
+    def test_every_module_use_snippet_in_the_sources_is_in_the_template(self):
+        template = api_docs.MODULE_USE.read_text()
+        sources = Path(api_docs.ROOT) / "src" / "sonicde"
+        names = set()
+        for qdoc in sources.glob("*/src/**/*.qdoc") if sources.is_dir() else []:
+            names.update(re.findall(r"\\include \{module-use\.qdocinc\} \{([^}]+)\}", qdoc.read_text(errors="replace")))
+        for name in names:
+            self.assertIn(f"//! [{name}]", template)
 
 
 class ParseCommandTest(unittest.TestCase):

@@ -45,6 +45,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # The sonic-docs checkout that ./fetch sonic-docs makes (config.py's @sourceroot is <root>/src).
 DOCS_CHECKOUT = ROOT / "src" / "sonicde" / "sonic-docs"
 QDOC_TIMEOUT = 900
+MODULE_USE = ROOT / "config" / "qdoc" / "module-use.qdocinc"
 
 
 @dataclass
@@ -109,6 +110,20 @@ def qt_docs_dir(modules: list[Module]) -> Path | None:
         if module.index_dirs:
             return Path(module.index_dirs[0])
     return None
+
+
+def overlay_templates(qt_docs: Path, target: Path) -> None:
+    """Makes target a copy of Qt's QDoc templates, by symlinks, with SonicDE's module-use.qdocinc."""
+    shutil.rmtree(target, ignore_errors=True)
+    includes = target / "global" / "includes"
+    includes.mkdir(parents=True)
+    for entry in (qt_docs / "global").iterdir():
+        if entry.name != "includes":
+            (target / "global" / entry.name).symlink_to(entry)
+    for entry in (qt_docs / "global" / "includes").iterdir():
+        (includes / entry.name).symlink_to(entry)
+    (includes / MODULE_USE.name).unlink(missing_ok=True)
+    (includes / MODULE_USE.name).symlink_to(MODULE_USE)
 
 
 def discover(build_root: Path, repos: list[str] | None = None) -> list[Module]:
@@ -320,7 +335,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="Indexes, DocBook, Markdown and logs (default state/api-docs).")
     parser.add_argument("--kde-docs", type=Path,
                         help="QDoc templates for $KDE_DOCS in the .qdocconf files "
-                             "(default: $KDE_DOCS, else Qt's documentation directory).")
+                             "(default: $KDE_DOCS, else Qt's with config/qdoc/module-use.qdocinc).")
     parser.add_argument("--converter", help="The docbook2markdown6 to run "
                                             "(default: the one built in this checkout, else an installed one).")
     parser.add_argument("--jobs", "-j", type=int, default=os.cpu_count() or 1)
@@ -338,7 +353,9 @@ def main(argv: list[str] | None = None) -> int:
     if qt_docs is None:
         print("The builds name no Qt documentation directory (ECM's QT_INSTALL_DOCS).", file=sys.stderr)
         return 1
-    kde_docs = args.kde_docs or Path(os.environ.get("KDE_DOCS") or qt_docs)
+    work = args.work
+    chosen_docs = args.kde_docs or os.environ.get("KDE_DOCS")
+    kde_docs = Path(chosen_docs) if chosen_docs else work.parent / f"{work.name}-templates"
     converter = args.converter or default_converter(args.build_root)
     print(f"Qt documentation: {qt_docs}; QDoc templates: {kde_docs}; converter: {converter}")
     names = [module.name for module in modules]
@@ -347,9 +364,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Several modules share a name: {', '.join(duplicates)}", file=sys.stderr)
         return 1
 
-    work = args.work
+    if not chosen_docs:
+        overlay_templates(qt_docs, kde_docs)
     qdoc_key = {"qdoc": sorted({tool_digest(module.qdoc) for module in modules}),
                 "qt_docs": str(qt_docs), "kde_docs": str(kde_docs)}
+    if not chosen_docs:
+        qdoc_key["module_use"] = file_digest(MODULE_USE)
     converter_key = tool_digest(converter)
     state = {} if args.full else load_state(work)
     if state.get("qdoc") != qdoc_key:
