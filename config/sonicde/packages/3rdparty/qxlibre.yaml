@@ -1,0 +1,22 @@
+sources:
+    git:
+        url: https://github.com/josephcrowell/QXLibre.git
+        ref: ${ref}
+        depth: 1
+        fetch:
+            - refs/heads/${ref}:refs/heads/${ref}
+
+# Each QXLibre branch targets one Qt minor, and must match the operating system's Qt.
+ref: main
+
+buildsystem: cmake
+
+cmake-extra-args:
+    - -DQT_BUILD_TESTS=OFF
+
+build-depends:
+    - os-installed/libegl
+    - os-installed/libx11
+    - os-installed/libx11-xcb
+    - os-installed/libxcb
+    - os-installed/libxkbcommon
