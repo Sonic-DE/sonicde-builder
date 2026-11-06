@@ -43,6 +43,7 @@ depends:
     - sonicde/sonic-frameworks-icon-themes
     - sonicde/sonic-frameworks-internationalization
     - sonicde/sonic-frameworks-io
+    - sonicde/sonic-frameworks-ipc
     - sonicde/sonic-frameworks-keybind
     - sonicde/sonic-frameworks-logging
     - sonicde/sonic-frameworks-notification-settings

@@ -51,6 +51,12 @@ Build them in this order, before the packages that use them:
 All three need Extra CMake Modules (sonic-frameworks-cmake-modules) and are licensed
 GPL-2.0-or-later.
 
+**qxlibre** (3rdparty) is a Qt platform plugin for X11, forked from Qt's `xcb` plugin. It needs Qt's development
+files with private headers and `Qt6BuildInternals`, plus the xcb, X11, xkbcommon and EGL libraries that Qt's plugin
+uses, `xcb-xinput` and `xcb-present` (on Debian, `libxcb-present-dev` is separate from `libxcb1-dev`). It uses private Qt
+APIs, so rebuild it on every Qt update. Its files don't overlap with Qt's, and it's licensed LGPL-3.0-only,
+GPL-2.0-only or GPL-3.0-only.
+
 ### Dependency changes
 
 - **sonic-login-manager** now requires sonic-frameworks-init-info, sonic-frameworks-ipc and sonic-frameworks-logging.
@@ -59,7 +65,7 @@ GPL-2.0-or-later.
 - **sonic-workspace-addons** now requires sonic-frameworks-logging. Its new Sonic Menu widget needs
   sonic-workspace at runtime (the Kicker and session QML modules); it replaces the kMenu widget from the KDE Store
   and does not need Plasma5Support.
-- **sonic-terminal** now requires sonic-frameworks-logging, and at runtime sonic-frameworks-quick-ui (Kirigami) and
+- **sonic-terminal** now requires sonic-frameworks-ipc and sonic-frameworks-logging, and at runtime sonic-frameworks-quick-ui (Kirigami) and
   sonic-frameworks-quick-desktop-style.
 - **sonic-theme-sdk** no longer needs Plasma5Support. Its `plasmaengineexplorer` program, man page and
   translations are gone; drop them from your package's file list.
@@ -380,6 +386,7 @@ yet ship in the upcoming release or aren't built on their own.
 
 | Package | First release | SonicDE release |
 |---|---|---|
+| qxlibre | — | Upcoming |
 | sonic-accounts-integration | 26.08.0 | 6.7.5 |
 | sonic-activities | 6.6.4 | 6.6.4 |
 | sonic-activities-stats | 6.7.3 | 6.7.3 |
