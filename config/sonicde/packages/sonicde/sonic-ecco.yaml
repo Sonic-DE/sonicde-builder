@@ -51,3 +51,4 @@ depends:
     - sonicde/sonic-frameworks-user-feedback
     - sonicde/sonic-frameworks-widgets-addons
     - sonicde/sonic-frameworks-windowsystem
+    - sonicde/sonic-terminal

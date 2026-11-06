@@ -65,8 +65,12 @@ GPL-2.0-only or GPL-3.0-only.
 - **sonic-workspace-addons** now requires sonic-frameworks-logging. Its new Sonic Menu widget needs
   sonic-workspace at runtime (the Kicker and session QML modules); it replaces the kMenu widget from the KDE Store
   and does not need Plasma5Support.
-- **sonic-terminal** now requires sonic-frameworks-ipc and sonic-frameworks-logging, and at runtime sonic-frameworks-quick-ui (Kirigami) and
-  sonic-frameworks-quick-desktop-style.
+- **sonic-terminal** now requires Qt 6 Qml, Quick, QuickControls2 and QuickWidgets, sonic-frameworks-ipc and
+  sonic-frameworks-logging, and at runtime sonic-frameworks-quick-ui (Kirigami), sonic-frameworks-qml-bridge and
+  sonic-frameworks-quick-desktop-style. It installs a new QML module, `org.sonicde.terminal`, so other programs
+  can show a terminal; add it to your package's file list. The KPart stays.
+- **sonic-ecco** and **sonic-workspace-addons** now need sonic-terminal at runtime (the terminal panel and the
+  Terminal Panel widget).
 - **sonic-theme-sdk** no longer needs Plasma5Support. Its `plasmaengineexplorer` program, man page and
   translations are gone; drop them from your package's file list.
 - **sonic-frameworks-doctools** now requires sonic-frameworks-logging; build it first. It installs a new
