@@ -28,6 +28,7 @@ depends:
     - sonicde/sonic-frameworks-gui-addons
     - sonicde/sonic-frameworks-icon-themes
     - sonicde/sonic-frameworks-internationalization
+    - sonicde/sonic-frameworks-logging
     - sonicde/sonic-frameworks-qt-integration
     - sonicde/sonic-frameworks-quick-ui
     - sonicde/sonic-frameworks-settings
