@@ -5,6 +5,7 @@ output directories, failure handling, and replacing the published folder. QDoc a
 are stand-in scripts that record how they were called."""
 import os
 import re
+import shutil
 import stat
 import sys
 import tempfile
@@ -155,11 +156,15 @@ echo "$2" >> {converted}
 mkdir -p "$6/$2" && echo page > "$6/$2/page.md"
 """)
         result = api_docs.Result()
-        markdown = api_docs.convert(modules, self.root / "work", converter, Path("/qt-docs"), result)
+        output = self.root / "api"
+        (output / "broken").mkdir(parents=True)
+        (output / "broken" / "published.md").write_text("published\n")
+        markdown = api_docs.convert(modules, self.root / "work", converter, Path("/qt-docs"), output, result)
         self.assertEqual(converted.read_text().split(), ["first", "broken", "last"])
         self.assertEqual(result.ok, ["first", "last"])
         self.assertEqual(list(result.failed), ["broken"])
-        self.assertEqual(sorted(p.parent.name for p in markdown.rglob("*.md")), ["first", "last"])
+        self.assertEqual(sorted(p.parent.name for p in markdown.rglob("*.md")), ["broken", "first", "last"])
+        self.assertEqual((markdown / "broken" / "published.md").read_text(), "published\n")
 
     def test_the_prepare_index_is_passed_whatever_its_name(self):
         modules = [self.module(name) for name in ("first", "noindex")]
@@ -169,7 +174,7 @@ mkdir -p "$6/$2" && echo page > "$6/$2/page.md"
         index.write_text("<INDEX/>\n")
         arguments = self.root / "arguments.txt"
         converter = write_script(self.root / "docbook2markdown6", f'echo "$*" >> {arguments}\n')
-        api_docs.convert(modules, work, converter, Path("/qt-docs"), api_docs.Result())
+        api_docs.convert(modules, work, converter, Path("/qt-docs"), self.root / "api", api_docs.Result())
         first, noindex = arguments.read_text().splitlines()
         self.assertIn(f"--index {index} ", first)
         self.assertNotIn("--index", noindex)
@@ -179,7 +184,7 @@ mkdir -p "$6/$2" && echo page > "$6/$2/page.md"
         converter = write_script(self.root / "docbook2markdown6", "exit 0\n")
         result = api_docs.Result()
         result.failed["broken"] = "qdoc --prepare exited 3"
-        api_docs.convert(modules, self.root / "work", converter, Path("/qt-docs"), result)
+        api_docs.convert(modules, self.root / "work", converter, Path("/qt-docs"), self.root / "api", result)
         self.assertEqual(result.ok, [])
         self.assertEqual(result.failed["broken"], "qdoc --prepare exited 3")
 
@@ -264,6 +269,41 @@ echo "rootPage: index" > "$out/toc.yaml"
         (self.root / "src" / "other" / "broken").unlink()
         self.assertEqual(self.run_main(), ["--prepare other", "--generate other", "convert other"])
         self.assertEqual(self.code, 0)
+
+    def test_a_failed_module_keeps_its_published_pages(self):
+        self.run_main()
+        published = self.root / "docs" / "api" / "other" / "page.md"
+        (self.root / "src" / "other" / "broken").write_text("")
+        self.run_main()
+        self.assertEqual(self.code, 1)
+        self.assertTrue(published.is_file())
+        # Pages an earlier run lost from the work folder come back from the reference too.
+        shutil.rmtree(self.root / "work" / "markdown" / "other")
+        (self.root / "src" / "base" / "notes.txt").write_text("changed\n")
+        self.run_main()
+        self.assertEqual(self.code, 1)
+        self.assertTrue(published.is_file())
+        self.assertTrue((self.root / "work" / "markdown" / "other" / "module.json").is_file())
+
+    def test_a_repo_run_keeps_every_other_published_module(self):
+        self.run_main()
+        shutil.rmtree(self.root / "work" / "markdown" / "other")
+        self.modules = [module for module in self.modules if module.name == "base"]
+        (self.root / "src" / "base" / "notes.txt").write_text("changed\n")
+        self.run_main("--repo", "base")
+        self.assertEqual(self.code, 0)
+        self.assertEqual(sorted(p.parent.name for p in (self.root / "docs" / "api").rglob("page.md")),
+                         ["base", "other", "user"])
+
+    def test_nothing_is_published_when_every_module_fails(self):
+        self.run_main()
+        api = self.root / "docs" / "api"
+        (api / "toc.yaml").write_text("published\n")
+        self.modules = [module for module in self.modules if module.name == "other"]
+        (self.root / "src" / "other" / "broken").write_text("")
+        self.run_main("--repo", "other")
+        self.assertEqual(self.code, 1)
+        self.assertEqual((api / "toc.yaml").read_text(), "published\n")
 
     def test_depends_are_read_across_continuation_lines(self):
         conf = self.root / "x.qdocconf"

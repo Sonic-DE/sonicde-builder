@@ -187,9 +187,18 @@ def run_pass(modules: list[Module], phase: str, work: Path, kde_docs: Path, jobs
                 print(f"FAILED {module.repo}/{module.name}: {error}", file=sys.stderr)
 
 
-def convert(modules: list[Module], work: Path, converter: str, qt_docs: Path, result: Result) -> Path:
+def keep_published(names: set[str], markdown: Path, output: Path) -> None:
+    """Copies these modules' published pages back to where the next publish takes them from,
+    unless they're still there. The next conversion lists them in the shared pages again."""
+    for name in names:
+        if (output / name).is_dir() and not (markdown / name).exists():
+            shutil.copytree(output / name, markdown / name)
+
+
+def convert(modules: list[Module], work: Path, converter: str, qt_docs: Path, output: Path, result: Result) -> Path:
     """Converts the modules' DocBook into the shared Markdown directory, one module at a time
-    (each run rewrites the shared toc.yaml, index page and all-members pages)."""
+    (each run rewrites the shared toc.yaml, index page and all-members pages). A module that
+    fails goes back to its published pages."""
     markdown = work / "markdown"
     markdown.mkdir(parents=True, exist_ok=True)
     (work / "logs").mkdir(exist_ok=True)
@@ -209,6 +218,8 @@ def convert(modules: list[Module], work: Path, converter: str, qt_docs: Path, re
         if code:
             result.failed[module.name] = f"docbook2markdown6 exited {code} (log {log})"
             print(f"FAILED {module.repo}/{module.name}: {result.failed[module.name]}", file=sys.stderr)
+            shutil.rmtree(markdown / module.name, ignore_errors=True)
+            keep_published({module.name}, markdown, output)
         else:
             result.ok.append(module.name)
     return markdown
@@ -393,18 +404,22 @@ def main(argv: list[str] | None = None) -> int:
 
     recorded = state.get("modules", {})
     names = {module.name for module in modules}
-    # Modules no longer built, and failed ones, leave the reference (a --repo run keeps the others).
+    # Modules no longer built leave the reference (a --repo run keeps the others). Failed ones
+    # keep their published pages and are retried next time.
     gone = set(recorded) - names if not args.repo else set()
     for name in gone | set(result.failed):
         recorded.pop(name, None)
+    for name in gone:
         shutil.rmtree(work / "markdown" / name, ignore_errors=True)
+    published = {path.name for path in args.output.iterdir() if path.is_dir()} if args.output.is_dir() else set()
+    keep_published(published if args.repo else set(result.failed), work / "markdown", args.output)
     to_convert = names if reconvert else set(generate)
     if gone and not to_convert:
         to_convert = {modules[0].name}  # one conversion rewrites the contents without them
-    markdown = convert([module for module in modules if module.name in to_convert], work, converter, qt_docs, result)
+    markdown = convert([module for module in modules if module.name in to_convert], work, converter, qt_docs,
+                       args.output, result)
     for name in result.failed:
         recorded.pop(name, None)
-        shutil.rmtree(markdown / name, ignore_errors=True)
     for module in modules:
         if module.name not in result.failed:
             recorded[module.name] = {"source": sources[module.repo], "index": index_digest(work, module.name)}
@@ -417,6 +432,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{len(result.failed)} modules failed:")
         for name in sorted(result.failed):
             print(f"  {name}: {result.failed[name]}")
+        if not result.ok:
+            print(f"Nothing converted; left {args.output} as it was")
+            return 1
     replace_output(markdown, args.output)
     print(f"Replaced {args.output}")
     return 1 if result.failed else 0
