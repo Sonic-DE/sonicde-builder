@@ -33,6 +33,7 @@ sonicde-builder-wip/
 ├── config/
 │   ├── qdoc/                          # QDoc includes that replace Qt's for the API reference
 │   ├── repos.list                     # maintained SonicDE repository inventory
+│   ├── sync-upstream-tags             # upstream release tag each group/repo syncs up to
 │   └── sonicde/
 │       ├── solutions/sonicde.yaml     # active solution (build list, prefix, env, fetch)
 │       └── packages/                  # package manifests (sonicde, 3rdparty, os-installed, qt6)
@@ -334,8 +335,12 @@ Key invariants:
 - The tracker records an upstream commit that has been processed. It
   always remains on upstream history and is never replaced by a rebased
   commit identity.
-- The temporary sync branch starts from upstream and rebases the
-  tracker-to-upstream work onto master.
+- Sync stops at an upstream release tag, not the branch tip: `sync` looks
+  up the repository's line in `config/sync-upstream-tags`, else its release
+  group's, and passes it as `git-autopick --upto-tag`. A repository without
+  a tag isn't synced; a tracker already past the tag is left alone.
+- The temporary sync branch starts from that tag and rebases the
+  tracker-to-tag work onto master.
 - If the rebased branch has the same commit as master, no PR is created;
   the temporary branch is removed and the tracker advances.
 - Existing remote sync branches are checked before starting new work so

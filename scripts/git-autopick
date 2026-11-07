@@ -64,6 +64,15 @@ if [ "${1:-}" = "--filter-rebase-todo" ]; then
     exit 0
 fi
 
+# --upto-tag TAG: sync only up to this upstream release tag, not the branch tip.
+UPTO_TAG=""
+if [ "${1:-}" = "--upto-tag" ]; then
+    [ "${2:-}" ] || die "missing tag after --upto-tag"
+    UPTO_TAG="$2"
+elif [ -n "${1:-}" ]; then
+    die "unknown argument: $1"
+fi
+
 ## load configuration
 AUTOPICK_UPSTREAM=`git config autopick.upstream || true`
 AUTOPICK_MASTER=`  git config autopick.master   || true`
@@ -134,6 +143,18 @@ git fetch --quiet --prune origin
 git fetch --quiet --prune upstream
 
 CURRENT_UPSTREAM=`git rev-parse "$AUTOPICK_UPSTREAM" 2>/dev/null` || die "cant get upstream branch SHA"
+UPSTREAM_LABEL="$AUTOPICK_UPSTREAM"
+if [ -n "$UPTO_TAG" ]; then
+    TAG_REF="refs/tags/$AUTOPICK_UPSTREAM_REMOTE/$UPTO_TAG"
+    git fetch --quiet --no-tags --force "$AUTOPICK_UPSTREAM_REMOTE" "+refs/tags/$UPTO_TAG:$TAG_REF" \
+        || die "upstream has no tag $UPTO_TAG"
+    TAG_COMMIT=`git rev-parse "$TAG_REF^{commit}" 2>/dev/null` || die "cant get commit of tag $UPTO_TAG"
+    git merge-base --is-ancestor "$TAG_COMMIT" "$CURRENT_UPSTREAM" \
+        || die "tag $UPTO_TAG is not on $AUTOPICK_UPSTREAM"
+    msg "=== syncing up to upstream tag $UPTO_TAG"
+    CURRENT_UPSTREAM="$TAG_COMMIT"
+    UPSTREAM_LABEL="$UPTO_TAG"
+fi
 CURRENT_TRACKER=`git rev-parse "$AUTOPICK_TRACKER" 2>/dev/null` || {
     msg "tracker branch $AUTOPICK_TRACKER missing; seeding it from $AUTOPICK_UPSTREAM"
     git push -q "$AUTOPICK_TRACKER_REMOTE" "+${CURRENT_UPSTREAM}:refs/heads/${AUTOPICK_TRACKER_BRANCH}" \
@@ -163,6 +184,13 @@ checkout_master_branch() {
         git checkout -q -b "$AUTOPICK_MASTER_BRANCH" "$AUTOPICK_MASTER"
     fi
 }
+
+if [ -n "$UPTO_TAG" ] && [ "$CURRENT_UPSTREAM" != "$CURRENT_TRACKER" ] \
+        && git merge-base --is-ancestor "$CURRENT_UPSTREAM" "$CURRENT_TRACKER"; then
+    msg "already synced past $UPTO_TAG; tracker unchanged"
+    checkout_master_branch
+    exit 0
+fi
 
 if [ "$CURRENT_UPSTREAM" == "$CURRENT_TRACKER" ]; then
     # Check if the tracker commit's changes are actually in master
@@ -293,7 +321,7 @@ check_work_waiting
 msg "=== creating working branch"
 git checkout -q "$AUTOPICK_MASTER"
 git branch -q -D "$TEMP_BRANCH" || true
-git checkout -q "$AUTOPICK_UPSTREAM" -b "$TEMP_BRANCH"
+git checkout -q "$CURRENT_UPSTREAM" -b "$TEMP_BRANCH"
 
 # rebase, auto-resolving .po file conflicts by taking upstream (theirs)
 do_rebase() {
@@ -413,5 +441,5 @@ msg "=== pushing branch $TEMP_BRANCH and creating PR"
 git push $AUTOPICK_MASTER_REMOTE $TEMP_BRANCH
 gh repo set-default "$(git config --get remote.origin.url | sed 's|.*github.com[:/]||' | sed 's|\.git$||')"
 create_sync_pr "$(git config --get remote.origin.url | sed 's|.*github.com[:/]||' | sed 's|\.git$||')" \
-    "upstream range $CURRENT_TRACKER..$AUTOPICK_UPSTREAM"
+    "upstream range $CURRENT_TRACKER..$UPSTREAM_LABEL"
 update_tracker

@@ -43,6 +43,12 @@ howto:
 `sync-all` invokes `sync REPOSITORY` for each managed checkout and records
 failures in `state/failed-sync-repos.txt`.
 
+Sync stops at an upstream release tag, never the branch tip, so unreleased
+upstream work stays out. `config/sync-upstream-tags` gives the tag for each
+release group (`core`, `frameworks`, `system`) and for each repository outside
+the groups; a repository line overrides its group. Raise the tags there when
+upstream releases. A repository with sync enabled and no tag isn't synced.
+
 `fetch REPOSITORY` fetches exactly one configured repository, without its
 dependencies. It accepts an unambiguous basename or a qualified package name
 such as `sonicde/sonic-browser-integration` or `3rdparty/qcoro6`. It loads the

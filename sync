@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-only
-# sync - Sync one repository's upstream changes to an origin PR.
+# sync - Sync one repository's upstream changes, up to its release tag, to an origin PR.
 set -euo pipefail
 
 usage() {
@@ -21,10 +21,48 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$SCRIPT_DIR/src/sonicde/$1"
+TAGS_FILE="$SCRIPT_DIR/config/sync-upstream-tags"
+LISTS_DIR="$SCRIPT_DIR/scripts"
 if [ ! -e "$REPO_DIR/.git" ]; then
     printf 'Repository checkout missing: %s\n' "$REPO_DIR" >&2
     exit 1
 fi
 
+# Value of the first "NAME TAG" line for NAME in the tags file.
+tag_for() {
+    local name value rest
+    while read -r name value rest; do
+        [ "$name" = "$1" ] && [ -n "$value" ] && { printf '%s\n' "$value"; return 0; }
+    done < <(grep -v '^[[:space:]]*#' "$TAGS_FILE")
+    return 1
+}
+
+group_of() {
+    local group list
+    for group in core frameworks system; do
+        list="$LISTS_DIR/version-repos-$group.list"
+        [ "$group" = core ] && list="$LISTS_DIR/version-repos-plasma.list"
+        grep -qx -- "$1" "$list" 2>/dev/null && { printf '%s\n' "$group"; return 0; }
+    done
+    return 1
+}
+
 cd "$REPO_DIR"
-exec "$SCRIPT_DIR/scripts/git-autopick"
+if [ "$(git config autopick.enabled || true)" != "true" ]; then
+    exec "$SCRIPT_DIR/scripts/git-autopick"
+fi
+
+[ -r "$TAGS_FILE" ] || { printf '[%s] cannot read %s\n' "$1" "$TAGS_FILE" >&2; exit 1; }
+TAG=$(tag_for "$1") || {
+    group=$(group_of "$1") || group=""
+    if [ -z "$group" ] || ! TAG=$(tag_for "$group"); then
+        printf '[%s] no upstream release tag for this repository%s in %s; not syncing\n' \
+            "$1" "${group:+ or its group $group}" "$TAGS_FILE" >&2
+        exit 1
+    fi
+}
+if [[ ! "$TAG" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]]; then
+    printf '[%s] invalid upstream tag in %s: %s\n' "$1" "$TAGS_FILE" "$TAG" >&2
+    exit 1
+fi
+exec "$SCRIPT_DIR/scripts/git-autopick" --upto-tag "$TAG"

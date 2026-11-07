@@ -666,5 +666,179 @@ echo "https://github.com/Sonic-DE/test/pull/1"
                          f"expected 2 replayed commits, got: {lines}")
 
 
+class TestUptoTag(AutopickTestBase):
+    """--upto-tag stops the sync at an upstream release tag."""
+
+    def _upstream_with_tag(self, upstream: Path, tag_at: int, total: int,
+                           tag: str = "v1.0") -> list[str]:
+        up_work = self.root / "up_work"
+        git(self.root, "clone", str(upstream), str(up_work))
+        git(up_work, "config", "user.email", "test@test.com")
+        git(up_work, "config", "user.name", "Test")
+        shas = []
+        for i in range(total):
+            shas.append(commit(up_work, f"upstream {i+1}", f"up{i+1}"))
+            if i + 1 == tag_at:
+                git(up_work, "tag", "-a", tag, "-m", tag)
+        git(up_work, "push", "--tags", "origin", "master")
+        return shas
+
+    def _run(self, work: Path, *args, marker: Path = None):
+        fake_gh = self.root / "bin" / "gh"
+        fake_gh.parent.mkdir(parents=True, exist_ok=True)
+        touch = f"touch {marker}\n" if marker else ""
+        fake_gh.write_text(f"""#!/bin/bash
+{touch}case "$1 $2" in
+    "pr create") echo "https://github.com/Sonic-DE/test/pull/1" ;;
+    "api user") echo josephcrowell ;;
+esac
+""")
+        fake_gh.chmod(0o755)
+        return subprocess.run(
+            [str(SCRIPTS / "git-autopick"), *args], cwd=str(work),
+            capture_output=True, text=True,
+            env={**os.environ,
+                 "PATH": f"{fake_gh.parent}:{os.environ.get('PATH', '')}"})
+
+    def _tracker(self, work: Path) -> str:
+        git(work, "fetch", "origin")
+        return git(work, "rev-parse", "origin/tracking/master").stdout.strip()
+
+    def test_commits_after_the_tag_are_not_synced(self):
+        work, origin, upstream = self._setup_repo()
+        shas = self._upstream_with_tag(upstream, tag_at=2, total=3)
+        git(work, "fetch", "upstream")
+
+        r = self._run(work, "--upto-tag", "v1.0")
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        subjects = git(work, "log", "--format=%s",
+                       "origin/master..origin/pr/sync-with-upstream").stdout.split("\n")
+        self.assertEqual([s for s in subjects if s], ["upstream 2", "upstream 1"])
+        self.assertEqual(self._tracker(work), shas[1])
+
+    def test_tracker_past_the_tag_syncs_nothing(self):
+        work, origin, upstream = self._setup_repo()
+        shas = self._upstream_with_tag(upstream, tag_at=1, total=2)
+        git(work, "fetch", "upstream")
+        git(work, "push", "origin", f"+{shas[1]}:refs/heads/tracking/master")
+        marker = self.root / "gh-called"
+
+        r = self._run(work, "--upto-tag", "v1.0", marker=marker)
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("already synced past v1.0", r.stderr)
+        self.assertFalse(marker.exists(), "gh was called")
+        self.assertEqual(self._tracker(work), shas[1])
+
+    def test_tag_not_on_the_upstream_branch_is_refused(self):
+        work, origin, upstream = self._setup_repo()
+        self._upstream_with_tag(upstream, tag_at=1, total=1)
+        up_work = self.root / "up_work"
+        git(up_work, "checkout", "-q", "-b", "side", "HEAD~1")
+        commit(up_work, "side commit", "side")
+        git(up_work, "tag", "v2.0")
+        git(up_work, "push", "origin", "v2.0")
+        git(work, "fetch", "upstream")
+        before = self._tracker(work)
+
+        r = self._run(work, "--upto-tag", "v2.0")
+
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("tag v2.0 is not on upstream/master", r.stderr)
+        self.assertEqual(self._tracker(work), before)
+
+    def test_missing_tag_is_refused(self):
+        work, origin, upstream = self._setup_repo()
+        self._upstream_with_tag(upstream, tag_at=1, total=1)
+        git(work, "fetch", "upstream")
+        before = self._tracker(work)
+
+        r = self._run(work, "--upto-tag", "v9.9")
+
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("upstream has no tag v9.9", r.stderr)
+        self.assertEqual(self._tracker(work), before)
+
+
+class TestSyncTagLookup(unittest.TestCase):
+    """sync passes the repository's tag, else its group's, to git-autopick."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmpdir.name)
+        shutil.copy(SCRIPTS.parent / "sync", self.root / "sync")
+        (self.root / "scripts").mkdir()
+        fake = self.root / "scripts" / "git-autopick"
+        fake.write_text('#!/bin/bash\necho "args:$*"\n')
+        fake.chmod(0o755)
+        (self.root / "config").mkdir()
+        (self.root / "config" / "sync-upstream-tags").write_text(
+            "# comment\ncore v6.8.2\nframeworks v6.31.0\nsonic-own v1.2.3\n"
+            "sonic-win v6.8.1\n")
+        (self.root / "scripts" / "version-repos-plasma.list").write_text(
+            "# core\nsonic-win\nsonic-panel\n")
+        (self.root / "scripts" / "version-repos-frameworks.list").write_text(
+            "# frameworks\nsonic-frameworks-a\n")
+        (self.root / "scripts" / "version-repos-system.list").write_text(
+            "# system\nsonic-ecco\n")
+
+    def tearDown(self):
+        self.tmpdir.cleanup()
+
+    def _sync(self, name: str, enabled: bool = True):
+        repo = self.root / "src" / "sonicde" / name
+        repo.mkdir(parents=True)
+        git(repo, "init", "-q")
+        if enabled:
+            git(repo, "config", "autopick.enabled", "true")
+        return subprocess.run([str(self.root / "sync"), name],
+                              capture_output=True, text=True)
+
+    def test_group_tag(self):
+        r = self._sync("sonic-panel")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout.strip(), "args:--upto-tag v6.8.2")
+
+    def test_repository_line_overrides_group(self):
+        r = self._sync("sonic-win")
+        self.assertEqual(r.stdout.strip(), "args:--upto-tag v6.8.1")
+
+    def test_ungrouped_repository_line(self):
+        r = self._sync("sonic-own")
+        self.assertEqual(r.stdout.strip(), "args:--upto-tag v1.2.3")
+
+    def test_no_tag_refuses_to_sync(self):
+        for name in ("sonic-ecco", "sonic-unlisted"):
+            r = self._sync(name)
+            self.assertNotEqual(r.returncode, 0, name)
+            self.assertNotIn("args:", r.stdout, name)
+            self.assertIn("no upstream release tag", r.stderr, name)
+
+    def test_disabled_repository_needs_no_tag(self):
+        r = self._sync("sonic-unlisted", enabled=False)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout.strip(), "args:")
+
+
+class TestSyncTagsFile(unittest.TestCase):
+    """Every line of config/sync-upstream-tags names a group or a known repository."""
+
+    def test_names_are_groups_or_repositories(self):
+        root = SCRIPTS.parent
+        repos = set((root / "config" / "repos.list").read_text().split())
+        groups = {"core", "frameworks", "system"}
+        names = []
+        for line in (root / "config" / "sync-upstream-tags").read_text().splitlines():
+            fields = line.split()
+            if not fields or fields[0].startswith("#"):
+                continue
+            self.assertEqual(len(fields), 2, line)
+            names.append(fields[0])
+            self.assertIn(fields[0], groups | repos, line)
+        self.assertEqual(len(names), len(set(names)), "a name is listed twice")
+        self.assertTrue(groups <= set(names), "a release group has no tag")
+
+
 if __name__ == "__main__":
     unittest.main()
