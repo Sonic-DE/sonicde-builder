@@ -120,6 +120,7 @@ sonic-polkit-agent
 sonic-power-management
 sonic-print-management
 sonic-pulseaudio-library
+sonic-pyside
 sonic-qt-accounts-library
 sonic-qt-theme-bridge
 sonic-quick-image-editor

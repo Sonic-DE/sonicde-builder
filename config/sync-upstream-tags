@@ -11,5 +11,6 @@ sonic-frameworks-quick-ui-addons  v1.16.1
 sonic-frameworks-sso              VERSION_8.61
 sonic-polkit                      v0.201.1
 sonic-pulseaudio-library          v1.9.0
+sonic-pyside                      v6.11.3
 sonic-qt-accounts-library         VERSION_1.17
 sonic-quick-image-editor          v0.7.0.1
