@@ -242,6 +242,55 @@ class TestPlasmaBump(VersionBumpTestBase):
         self.assertEqual(len(log.splitlines()), 1)
 
 
+class TestVersionFromSyncTags(VersionBumpTestBase):
+    """Without a version argument, the group's tag in config/sync-upstream-tags is used."""
+
+    def _write_tags(self, text: str):
+        (self.root / "config").mkdir(exist_ok=True)
+        (self.root / "config" / "sync-upstream-tags").write_text(text)
+
+    def _run_default(self, category: str, extra_args=None):
+        return subprocess.run(
+            [sys.executable, str(VERSION_BUMP), category, "--root", str(self.root),
+             *(extra_args or [])], capture_output=True, text=True)
+
+    def test_group_tag_without_its_prefix_is_used(self):
+        self._write_tags("# c\ncore v6.7.5\nframeworks VERSION_6.30.0\nsonic-x v9.9.9\n")
+        plasma = self._make_repo("sonic-plasma", PLASMA_CMAKE)
+        fwk = self._make_repo("sonic-fwk", FRAMEWORKS_CMAKE)
+
+        for category in ("core", "frameworks"):
+            r = self._run_default(category, ["--no-push"])
+            self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('set(PROJECT_VERSION "6.7.5")', (plasma / "CMakeLists.txt").read_text())
+        self.assertIn('set(KF_VERSION "6.30.0")', (fwk / "CMakeLists.txt").read_text())
+
+    def test_unchanged_tag_makes_no_commit(self):
+        self._write_tags("core v6.7.4\n")
+        repo = self._make_repo("sonic-plasma", PLASMA_CMAKE)
+        r = self._run_default("core", ["--no-push"])
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(len(git(repo, "log", "--oneline").stdout.splitlines()), 1)
+
+    def test_newer_patch_release_is_not_lowered(self):
+        self._write_tags("core v6.7.4\n")
+        repo = self._make_repo("sonic-plasma", PLASMA_CMAKE.replace('"6.7.4"', '"6.7.4.1"'),
+                               category="plasma")
+        r = self._run_default("core", ["--no-push"])
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("already at 6.7.4.1, newer than 6.7.4; no change", r.stdout)
+        self.assertIn('"6.7.4.1"', (repo / "CMakeLists.txt").read_text())
+        self.assertEqual(len(git(repo, "log", "--oneline").stdout.splitlines()), 1)
+
+    def test_missing_group_line_fails_without_changes(self):
+        self._write_tags("core v6.7.5\n")
+        repo = self._make_repo("sonic-sys", SYSTEM_CMAKE)
+        r = self._run_default("system", ["--no-push"])
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("has no line for system", r.stderr)
+        self.assertEqual(len(git(repo, "log", "--oneline").stdout.splitlines()), 1)
+
+
 class TestFrameworksBump(VersionBumpTestBase):
 
     def test_bump_updates_all_three_locations(self):

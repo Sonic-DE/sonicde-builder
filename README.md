@@ -49,6 +49,12 @@ release group (`core`, `frameworks`, `system`) and for each repository outside
 the groups; a repository line overrides its group. Raise the tags there when
 upstream releases. A repository with sync enabled and no tag isn't synced.
 
+`version-bump-core`, `version-bump-frameworks` and `version-bump-system` (and their
+`version-bump-tag-*` partners) take the version from the same file when none is
+given, without the `v` or `VERSION_` prefix: core `v6.8.2` becomes `6.8.2`. A
+repository already at that version, or at a newer SonicDE patch release, isn't
+changed.
+
 `fetch REPOSITORY` fetches exactly one configured repository, without its
 dependencies. It accepts an unambiguous basename or a qualified package name
 such as `sonicde/sonic-browser-integration` or `3rdparty/qcoro6`. It loads the

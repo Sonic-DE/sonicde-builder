@@ -3,8 +3,9 @@
 # version-bump-system - Update and commit System CMake versions, without tagging.
 #
 # System repos use set(RELEASE_SERVICE_VERSION_MAJOR/MINOR/MICRO "X") in
-# CMakeLists.txt.  The new version is passed as the first argument (X.Y.Z
-# format) and split into the three components.
+# CMakeLists.txt.  The new version (X.Y.Z) is the optional first argument,
+# by default system's tag in config/sync-upstream-tags without its v prefix,
+# and is split into the three components.
 #
 # Unlike KDE's release scripts, no second "bump to next dev version" commit
 # is created.  We make patch releases against these tagged versions.

@@ -3,7 +3,8 @@
 # version-bump-core - Update and commit Core CMake versions, without tagging.
 #
 # Core repos use set(PROJECT_VERSION "X.Y.Z") in CMakeLists.txt.
-# The new version is passed as the first argument (X.Y.Z format).
+# The new version (X.Y.Z) is the optional first argument; by default it is
+# core's tag in config/sync-upstream-tags without its v prefix.
 #
 # Unlike KDE's release scripts, no second "bump to next dev version" commit
 # is created.  We make patch releases against these tagged versions.

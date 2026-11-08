@@ -7,12 +7,16 @@ Tag creation is a separate --tag-only operation. Unlike KDE's release scripts,
 no second "bump to next dev version" commit is created -- we make patch
 releases against these tagged versions (e.g. 6.7.4.1).
 
+Without <version>, core, frameworks and system use the group's tag in
+config/sync-upstream-tags without its v or VERSION_ prefix. A repository already
+at that version, or at a newer patch release, is left unchanged.
+
 Usage:
-    version_bump.py core <version> [--dry-run] [--list]
-    version_bump.py frameworks <version> [--dry-run] [--list]
-    version_bump.py system <version> [--dry-run] [--list]
+    version_bump.py core [<version>] [--dry-run] [--list]
+    version_bump.py frameworks [<version>] [--dry-run] [--list]
+    version_bump.py system [<version>] [--dry-run] [--list]
     version_bump.py project-dep <version> [--dry-run] [--no-push]
-    version_bump.py core <version> --tag-only [--dry-run] [--no-push]
+    version_bump.py core [<version>] --tag-only [--dry-run] [--no-push]
 """
 from __future__ import annotations
 
@@ -121,6 +125,29 @@ CATEGORIES: dict[str, dict] = {
 def _validate_version(version: str) -> bool:
     """Return True if *version* looks like ``X.Y.Z``."""
     return bool(re.match(r"^\d+\.\d+\.\d+$", version))
+
+
+SYNC_TAGS = Path("config") / "sync-upstream-tags"
+
+
+def version_from_sync_tags(root: Path, category: str) -> str:
+    """The group's upstream release tag from config/sync-upstream-tags, without v or VERSION_."""
+    group = "core" if category == "plasma" else category
+    path = root / SYNC_TAGS
+    for line in path.read_text(encoding="utf-8").splitlines():
+        fields = line.split("#", 1)[0].split()
+        if len(fields) == 2 and fields[0] == group:
+            version = re.sub(r"^(?:v|VERSION_)", "", fields[1])
+            if not _validate_version(version):
+                raise ValueError(f"{path}: {group} tag {fields[1]!r} is not a vX.Y.Z release")
+            return version
+    raise ValueError(f"{path} has no line for {group}")
+
+
+def _version_key(version: str | None) -> tuple[int, ...] | None:
+    if not version or not re.fullmatch(r"\d+(?:\.\d+)*", version):
+        return None
+    return tuple(int(part) for part in version.split("."))
 
 
 def _git(cwd: Path, *args: str) -> subprocess.CompletedProcess:
@@ -391,6 +418,12 @@ def bump_category(
                 continue
 
         current = _get_current_version(cmake, category) if cmake.exists() else None
+        current_key, target_key = _version_key(current), _version_key(version)
+        if current_key and target_key and current_key > target_key:
+            # A SonicDE patch release (6.8.2.1) is newer than its upstream tag.
+            print(f"[{repo_name}] already at {current}, newer than {version}; no change")
+            processed += 1
+            continue
         content = cmake.read_text(encoding="utf-8") if cmake.exists() else ""
         new_content = cat["replace"](content, version)
         if category == "frameworks" and repo_name == "sonic-frameworks-cmake-modules":
@@ -528,7 +561,8 @@ def main(argv: list[str] | None = None) -> int:
         choices=["core", "plasma", "frameworks", "system", "project-dep"],
         help="Version category",
     )
-    parser.add_argument("version", nargs="?", help="New version (X.Y.Z)")
+    parser.add_argument("version", nargs="?",
+                        help="New version (X.Y.Z); default: the group's tag in config/sync-upstream-tags")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -585,7 +619,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if not args.version:
-        parser.error("version is required unless --list is given")
+        try:
+            args.version = version_from_sync_tags(root, args.category)
+        except (OSError, ValueError) as error:
+            parser.error(str(error))
+        print(f"[{args.category}] using {args.version} from {SYNC_TAGS}")
 
     if not _validate_version(args.version):
         parser.error(f"version must be in X.Y.Z format, got {args.version!r}")
