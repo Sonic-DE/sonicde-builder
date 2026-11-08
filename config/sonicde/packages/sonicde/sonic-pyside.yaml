@@ -12,9 +12,9 @@ sources:
                 fetch: ${@SOLUTION::fetch::upstream}
         config:
             autopick.enabled: 'true'
-            autopick.upstream: upstream/dev
+            autopick.upstream: upstream/6.11.3
             autopick.master: origin/${master_branch}
-            autopick.tracker: origin/tracking/master
+            autopick.tracker: origin/tracking/6.11.3
             advice.detachedHead: 'false'
             remote.origin.tagOpt: --no-tags
             remote.upstream.tagOpt: --no-tags
