@@ -111,6 +111,17 @@ def tag_fetch_option(remote: dict) -> str:
     return "--tags"
 
 
+def force_mirror_refspec(refspec: str) -> str:
+    """Force refspecs that only mirror the remote, so moved tags replace the copy.
+
+    Local branches and plain tags (refs/heads/*, refs/tags/<name>) are never forced."""
+    dest = refspec.partition(":")[2]
+    if dest.startswith("refs/remotes/") or (
+            dest.startswith("refs/tags/") and "/" in dest[len("refs/tags/"):]):
+        return "+" + refspec.lstrip("+")
+    return refspec
+
+
 def fetch_missing(pkg_name: str, git_spec: dict, dest: Path,
                   dry_run: bool = False) -> None:
     """Initialize and fetch a new checkout."""
@@ -206,15 +217,12 @@ def fetch_existing(pkg_name: str, git_spec: dict, dest: Path,
     # fetch/prune declared remotes
     for rname, rdata in (git_spec.get("remotes") or {}).items():
         depth = rdata.get("depth", 0)
-        # The refspecs only write mirrors of the remote (remote-tracking
-        # branches, refs/tags/<remote>/*), so a moved tag or rewritten branch
-        # must replace the old copy.
-        fetch_args = ["fetch", "--prune", "--force", tag_fetch_option(rdata)]
+        fetch_args = ["fetch", "--prune", tag_fetch_option(rdata)]
         if depth:
             fetch_args += ["--depth", str(depth)]
         fetch_args.append(rname)
         for refspec in (rdata.get("fetch") or []):
-            fetch_args.append(refspec)
+            fetch_args.append(force_mirror_refspec(refspec))
         print(f"[{pkg_name}] fetching {rname}")
         run_git(repo_dir, fetch_args)
 

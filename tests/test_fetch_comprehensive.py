@@ -350,6 +350,40 @@ class TestFetchMultiRemote(unittest.TestCase):
         self.assertEqual(
             git(dest, "rev-parse", "refs/tags/origin/1.0").stdout.strip(), second)
 
+    def test_rewritten_remote_never_overwrites_a_local_branch(self):
+        """A refspec into refs/heads/ keeps local commits when the remote is rewritten."""
+        origin_remote = self.root / "remotes" / "origin.git"
+        make_bare_remote(origin_remote)
+        work = make_work_repo(self.root / "origin-work", origin_remote)
+        commit(work, "init")
+        git(work, "push", "origin", "master")
+        git(work, "push", "origin", "master:side")
+
+        model = self._model("sonicde/test", {
+            "ref": "origin/master",
+            "local_branch": "master",
+            "remotes": {
+                "origin": {
+                    "url": str(origin_remote),
+                    "fetch": ["refs/heads/*:refs/remotes/origin/*",
+                              "refs/heads/side:refs/heads/side"],
+                },
+            },
+        })
+        self.assertEqual(fetch_all(model), 0)
+        dest = self.source_root / "sonicde" / "test"
+        git(dest, "config", "user.email", "test@test.com")
+        git(dest, "config", "user.name", "Test")
+        local = git(dest, "commit-tree", "side^{tree}", "-p", "side",
+                    "-m", "local work").stdout.strip()
+        git(dest, "update-ref", "refs/heads/side", local)
+
+        commit(work, "rewritten", "theirs")
+        git(work, "push", "--force", "origin", "HEAD:side")
+
+        fetch_all(model)
+        self.assertEqual(git(dest, "rev-parse", "side").stdout.strip(), local)
+
     def test_existing_checkout_preserves_branch_and_index(self):
         """Existing checkout keeps its branch, index, and untracked files."""
         origin_remote = self.root / "remotes" / "origin.git"
