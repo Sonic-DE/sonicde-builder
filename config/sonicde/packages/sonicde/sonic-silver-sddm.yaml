@@ -11,7 +11,7 @@ sources:
                 depth: ${upstream_depth}
                 fetch: ${@SOLUTION::fetch::upstream}
         config:
-            autopick.enabled: 'true'
+            autopick.enabled: 'false'
             autopick.upstream: upstream/main
             autopick.master: origin/${master_branch}
             autopick.tracker: origin/tracking/main
