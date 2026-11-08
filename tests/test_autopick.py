@@ -17,8 +17,9 @@ import unittest
 from pathlib import Path
 
 SCRIPTS = Path(__file__).parent.parent / "scripts"
-ORIGINAL_AUTOPICK = Path(
-    "/home/joseph/Development/c++/sonicde-meta-build/scripts/git-autopick")
+# Known-good sync algorithm. A change to scripts/git-autopick must update this copy
+# in the same commit, so every algorithm change is deliberate.
+ORIGINAL_AUTOPICK = Path(__file__).parent / "fixtures" / "git-autopick.reference"
 
 
 def git(cwd, *args, check=True, env=None):
@@ -119,10 +120,10 @@ class AutopickTestBase(unittest.TestCase):
 
 class TestOriginalScriptParity(unittest.TestCase):
 
-    @unittest.skipUnless(ORIGINAL_AUTOPICK.exists(),
-                         "authoritative sonicde-meta-build checkout unavailable")
     def test_builder_copy_matches_authoritative_original(self):
-        """The port must not silently alter the known-good sync algorithm."""
+        """The sync algorithm must not change without updating the reference."""
+        self.assertTrue(ORIGINAL_AUTOPICK.is_file(),
+                        f"missing reference {ORIGINAL_AUTOPICK}")
         def executable_content(path: Path) -> bytes:
             lines = path.read_bytes().splitlines(keepends=True)
             return b"".join([
@@ -748,6 +749,80 @@ esac
         self.assertIn("tag v2.0 is not on upstream/master", r.stderr)
         self.assertEqual(self._tracker(work), before)
 
+    def _upstream_commits(self, upstream: Path, subjects: list[str],
+                          tag_after: int) -> list[str]:
+        """Commit each subject to its own file upstream; tag v1.0 after commit tag_after."""
+        up_work = self.root / "up_work"
+        git(self.root, "clone", str(upstream), str(up_work))
+        git(up_work, "config", "user.email", "test@test.com")
+        git(up_work, "config", "user.name", "Test")
+        shas = []
+        for i, subject in enumerate(subjects, 1):
+            (up_work / f"up{i}.txt").write_text(subject)
+            git(up_work, "add", ".")
+            git(up_work, "commit", "-q", "-m", subject)
+            shas.append(git(up_work, "rev-parse", "HEAD").stdout.strip())
+            if i == tag_after:
+                git(up_work, "tag", "-a", "v1.0", "-m", "v1.0")
+        git(up_work, "push", "--tags", "origin", "master")
+        return shas
+
+    def test_nothing_new_up_to_the_tag_moves_tracker_to_the_tag(self):
+        work, origin, upstream = self._setup_repo()
+        shas = self._upstream_commits(
+            upstream, ["Update version for new release 1.0", "upstream after tag"],
+            tag_after=1)
+        git(work, "fetch", "upstream")
+        marker = self.root / "gh-called"
+
+        r = self._run(work, "--upto-tag", "v1.0", marker=marker)
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertFalse(marker.exists(), "gh was called")
+        self.assertEqual(self._tracker(work), shas[0])
+
+    def test_master_already_has_the_tag_commit_moves_tracker_to_the_tag(self):
+        work, origin, upstream = self._setup_repo()
+        shas = self._upstream_commits(
+            upstream, ["upstream 1", "upstream after tag"], tag_after=1)
+        git(work, "fetch", "upstream")
+        git(work, "cherry-pick", shas[0])
+        git(work, "push", "origin", "master")
+        git(work, "fetch", "origin")
+
+        r = self._run(work, "--upto-tag", "v1.0")
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self._tracker(work), shas[0])
+
+    def test_waiting_sync_branch_moves_tracker_to_the_tag(self):
+        work, origin, upstream = self._setup_repo()
+        shas = self._upstream_commits(
+            upstream, ["upstream 1", "upstream after tag"], tag_after=1)
+        git(work, "fetch", "upstream")
+        git(work, "push", "origin", f"{shas[0]}:refs/heads/pr/sync-with-upstream")
+
+        r = self._run(work, "--upto-tag", "v1.0")
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("creating PR for existing branch", r.stderr)
+        self.assertEqual(self._tracker(work), shas[0])
+
+    def test_tracker_on_the_tag_syncs_nothing(self):
+        work, origin, upstream = self._setup_repo()
+        shas = self._upstream_commits(
+            upstream, ["upstream 1", "upstream after tag"], tag_after=1)
+        git(work, "fetch", "upstream")
+        git(work, "push", "origin", f"+{shas[0]}:refs/heads/tracking/master")
+        marker = self.root / "gh-called"
+
+        r = self._run(work, "--upto-tag", "v1.0", marker=marker)
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("already synced", r.stderr)
+        self.assertFalse(marker.exists(), "gh was called")
+        self.assertEqual(self._tracker(work), shas[0])
+
     def test_missing_tag_is_refused(self):
         work, origin, upstream = self._setup_repo()
         self._upstream_with_tag(upstream, tag_at=1, total=1)
@@ -823,6 +898,33 @@ class TestSyncTagLookup(unittest.TestCase):
 
 class TestSyncTagsFile(unittest.TestCase):
     """Every line of config/sync-upstream-tags names a group or a known repository."""
+
+    def test_every_synced_repository_has_a_tag(self):
+        """Each built package with sync enabled resolves to its own or its group's tag."""
+        root = SCRIPTS.parent
+        solution = (root / "config" / "sonicde" / "solutions" / "sonicde.yaml").read_text()
+        tags = {}
+        for line in (root / "config" / "sync-upstream-tags").read_text().splitlines():
+            fields = line.split()
+            if len(fields) == 2 and not fields[0].startswith("#"):
+                tags[fields[0]] = fields[1]
+        groups = {}
+        for group, name in (("core", "plasma"), ("frameworks", "frameworks"),
+                            ("system", "system")):
+            for repo in (SCRIPTS / f"version-repos-{name}.list").read_text().split():
+                if not repo.startswith("#"):
+                    groups.setdefault(repo, group)
+        manifests = sorted((root / "config" / "sonicde" / "packages" / "sonicde")
+                           .glob("*.yaml"))
+        self.assertTrue(manifests)
+        for manifest in manifests:
+            if "autopick.enabled: 'true'" not in manifest.read_text():
+                continue
+            if f"sonicde/{manifest.stem}\n" not in solution:
+                continue  # not built, so sync-all never syncs it
+            repo = manifest.stem
+            tag = tags.get(repo) or tags.get(groups.get(repo, ""))
+            self.assertTrue(tag, f"{repo} has sync enabled but no tag")
 
     def test_names_are_groups_or_repositories(self):
         root = SCRIPTS.parent

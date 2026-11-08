@@ -10,6 +10,18 @@ Rules:
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
 
+## Sync trackers
+
+- The tracker (`origin/tracking/<branch>`) is the only record of sync progress. It sits at the last upstream
+  commit that was synced, or at the last commit after it that sync would skip anyway (scripty, `GIT_SILENT`,
+  version bumps). Under the sync-tag system that is usually the commit with the matching release tag.
+- A tracker at the release tag is correct when nothing real lies between it and the last synced commit. Moving
+  a tracker to the tag does not make months of already-synced history get synced again; when that happens, look
+  for what moved the tracker backwards or off its upstream line.
+- Never move trackers in bulk, and never trust local reflogs or patch equivalence for where a tracker was. Find
+  each repository's last synced commit by commit message (with author and author date), one repository at a
+  time, and give Joe the push; agents can't push.
+
 ## Building and installing
 
 - **Building against freshly built packages needs no install command.** Every `./build-all` and
