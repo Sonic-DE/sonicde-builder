@@ -206,9 +206,10 @@ def fetch_existing(pkg_name: str, git_spec: dict, dest: Path,
     # fetch/prune declared remotes
     for rname, rdata in (git_spec.get("remotes") or {}).items():
         depth = rdata.get("depth", 0)
-        fetch_args = ["fetch", "--prune", tag_fetch_option(rdata)]
-        if rname == "upstream":
-            fetch_args.append("--force")
+        # The refspecs only write mirrors of the remote (remote-tracking
+        # branches, refs/tags/<remote>/*), so a moved tag or rewritten branch
+        # must replace the old copy.
+        fetch_args = ["fetch", "--prune", "--force", tag_fetch_option(rdata)]
         if depth:
             fetch_args += ["--depth", str(depth)]
         fetch_args.append(rname)

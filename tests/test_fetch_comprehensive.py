@@ -317,6 +317,39 @@ class TestFetchMultiRemote(unittest.TestCase):
             dest, "rev-parse", "upstream/master").stdout.strip()
         self.assertEqual(fetched_upstream, rewritten_upstream)
 
+    def test_moved_origin_tag_updates_its_mirror(self):
+        """A tag recreated on origin replaces the refs/tags/origin/ copy."""
+        origin_remote = self.root / "remotes" / "origin.git"
+        make_bare_remote(origin_remote)
+        work = make_work_repo(self.root / "origin-work", origin_remote)
+        first = commit(work, "Release 1.0")
+        git(work, "tag", "1.0")
+        git(work, "push", "--tags", "origin", "master")
+
+        model = self._model("sonicde/test", {
+            "ref": "origin/master",
+            "local_branch": "master",
+            "remotes": {
+                "origin": {
+                    "url": str(origin_remote),
+                    "fetch": ["refs/heads/*:refs/remotes/origin/*",
+                              "refs/tags/*:refs/tags/origin/*"],
+                },
+            },
+        })
+        self.assertEqual(fetch_all(model), 0)
+        dest = self.source_root / "sonicde" / "test"
+        self.assertEqual(
+            git(dest, "rev-parse", "refs/tags/origin/1.0").stdout.strip(), first)
+
+        second = commit(work, "Release 1.0 again")
+        git(work, "tag", "-f", "1.0")
+        git(work, "push", "--force", "--tags", "origin", "master")
+
+        self.assertEqual(fetch_all(model), 0)
+        self.assertEqual(
+            git(dest, "rev-parse", "refs/tags/origin/1.0").stdout.strip(), second)
+
     def test_existing_checkout_preserves_branch_and_index(self):
         """Existing checkout keeps its branch, index, and untracked files."""
         origin_remote = self.root / "remotes" / "origin.git"
