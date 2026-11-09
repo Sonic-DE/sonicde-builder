@@ -22,6 +22,7 @@ single packages between releases.
 | SonicDE release | Frameworks | System | Released |
 |---|---|---|---|
 | [Upcoming](#upcoming-release) | | | not yet released |
+| [6.8.2](#682-november-2026) | | 26.08.3 | November 2026 |
 | [6.8.0](#680-october-2026) | 6.31.0 | 26.08.2 | October 2026 |
 | [6.7.5](#675-september-2026) | 6.30.0 | 26.08.0 | September 2026 |
 | [6.7.4](#674-august-2026) | 6.29.0 | 26.04.3.x | August 2026 |
@@ -51,34 +52,8 @@ Build them in this order, before the packages that use them:
 All three need Extra CMake Modules (sonic-frameworks-cmake-modules) and are licensed
 GPL-2.0-or-later.
 
-**qxlibre** (3rdparty) is a Qt platform plugin for X11, forked from Qt's `xcb` plugin. It needs Qt's development
-files with private headers and `Qt6BuildInternals`, plus the xcb, X11, xkbcommon and EGL libraries that Qt's plugin
-uses, `xcb-xinput` and `xcb-present` (on Debian, `libxcb-present-dev` is separate from `libxcb1-dev`). It uses private Qt
-APIs, so rebuild it on every Qt update. Its files don't overlap with Qt's, and it's licensed LGPL-3.0-only,
-GPL-2.0-only or GPL-3.0-only.
-
 ### Dependency changes
 
-- **sonic-login-manager** now requires sonic-frameworks-init-info, sonic-frameworks-ipc and sonic-frameworks-logging.
-- **sonic-desktop-interface** and **sonic-screenlocker** now require sonic-frameworks-ipc and sonic-frameworks-logging.
-- **sonic-win** now requires sonic-frameworks-ipc and the xcb XTEST library (`xcb-xtest`, part of libxcb). It installs
-  a new CMake package, `SonicWinDwellClickerIpc`, with the header `SonicWin/DwellClickerIpc.h`; add them to your
-  package's file list. **sonic-desktop-interface** now needs it to build, and installs two new QML modules,
-  `org.sonicde.dwellclicker.ipc` and `org.kde.plasma.access.kcm`; add them to your package's file list.
-- **sonic-firewall** now requires sonic-frameworks-init-info, sonic-frameworks-ipc and sonic-frameworks-logging.
-- **sonic-workspace-addons** now requires sonic-frameworks-logging. Its new Sonic Menu widget needs
-  sonic-workspace at runtime (the Kicker and session QML modules); it replaces the kMenu widget from the KDE Store
-  and does not need Plasma5Support.
-- **sonic-terminal** now requires Qt 6 Qml, Quick, QuickControls2 and QuickWidgets, sonic-frameworks-ipc and
-  sonic-frameworks-logging, and at runtime sonic-frameworks-quick-ui (Kirigami), sonic-frameworks-qml-bridge and
-  sonic-frameworks-quick-desktop-style. It installs a new QML module, `org.sonicde.terminal`, so other programs
-  can show a terminal; add it to your package's file list. The KPart stays.
-- **sonic-ecco** and **sonic-workspace-addons** now need sonic-terminal at runtime (the terminal panel and the
-  Terminal Panel widget).
-- **sonic-tv-interface** now needs sonic-keyboard at runtime: its session selects the `sonicvirtualkeyboard` input
-  method for the on-screen keyboard.
-- **sonic-theme-sdk** no longer needs Plasma5Support. Its `plasmaengineexplorer` program, man page and
-  translations are gone; drop them from your package's file list.
 - **sonic-frameworks-doctools** now requires sonic-frameworks-logging; build it first. It installs a new
   program, `docbook2markdown6`, which turns QDoc's DocBook output for SonicDE's libraries into Markdown pages
   for the API reference on sonicde.org; add it to your package's file list. It needs no new dependencies. Its `kf.doctools.core` logging category is
@@ -86,19 +61,56 @@ GPL-2.0-only or GPL-3.0-only.
 
 ### Actions
 
+- **License change: sonic-frameworks-color-scheme, sonic-frameworks-quick-ui and
+  sonic-frameworks-quick-desktop-style now contain GPL-2.0-or-later code** (the new tools-area files), so their
+  binaries as a whole are GPL-2.0-or-later. Update the license field of those packages.
+- **sonic-frameworks-color-scheme gains `KToolsArea`**, the one implementation of the shared titlebar and toolbar
+  transparency settings; sonic-silver, sonic-win and sonic-qt-theme-bridge use it. It adds API without breaking
+  binary compatibility; upgrade it with them.
+
+## 6.8.2 (November 2026)
+
+System 26.08.3. Several Core and System packages now need the new Frameworks packages listed under
+[Upcoming release](#upcoming-release).
+
+### Dependency changes
+
+- **QXLibre** ([X11Libre/QXLibre](https://github.com/X11Libre/QXLibre)), a Qt platform plugin for X11, is a new
+  optional runtime dependency. It isn't part of SonicDE: Core programs use it when it's installed and fall back to
+  Qt's `xcb` plugin when it isn't.
+- **sonic-login-manager** now requires sonic-frameworks-init-info, sonic-frameworks-ipc and sonic-frameworks-logging.
+- **sonic-desktop-interface** and **sonic-screenlocker** now require sonic-frameworks-ipc and sonic-frameworks-logging.
+- **sonic-win** now requires sonic-frameworks-ipc, sonic-frameworks-logging and the xcb XTEST library (`xcb-xtest`,
+  part of libxcb). It installs a new CMake package, `SonicWinDwellClickerIpc`, with the header
+  `SonicWin/DwellClickerIpc.h`; add them to your package's file list. **sonic-desktop-interface** now needs it to
+  build, and installs two new QML modules, `org.sonicde.dwellclicker.ipc` and `org.kde.plasma.access.kcm`; add them
+  to your package's file list.
+- **sonic-silver** and **sonic-keybind-daemon** now require sonic-frameworks-logging.
+- **sonic-firewall** now requires sonic-frameworks-init-info, sonic-frameworks-ipc and sonic-frameworks-logging.
+- **sonic-workspace-addons** now requires sonic-frameworks-logging. Its new Sonic Menu widget needs
+  sonic-workspace at runtime (the Kicker and session QML modules); it replaces the kMenu widget from the KDE Store
+  and does not need Plasma5Support. Its Terminal Panel widget needs sonic-terminal at runtime.
+- **sonic-tv-interface** and **sonic-mobile-interface** now need sonic-keyboard at runtime: their sessions select the
+  `sonicvirtualkeyboard` input method for the on-screen keyboard.
+- **sonic-theme-sdk** no longer needs Plasma5Support. Its `plasmaengineexplorer` program, man page and
+  translations are gone; drop them from your package's file list.
+- **sonic-terminal** (System) now requires Qt 6 Qml, Quick, QuickControls2 and QuickWidgets, sonic-frameworks-ipc and
+  sonic-frameworks-logging, and at runtime sonic-frameworks-quick-ui (Kirigami), sonic-frameworks-qml-bridge and
+  sonic-frameworks-quick-desktop-style. It installs a new QML module, `org.sonicde.terminal`, so other programs
+  can show a terminal; add it to your package's file list. The KPart stays.
+- **sonic-ecco** (System) now needs sonic-terminal at runtime (the terminal panel).
+
+### Actions
+
 - **Upgrade sonic-qt-theme-bridge, sonic-frameworks-quick-ui, sonic-frameworks-quick-desktop-style,
   sonic-frameworks-quick-silver-style and sonic-silver together.** The title bar and toolbar settings are now
   shared, theme-independent settings (`[ToolsArea]` in `kdeglobals`) that all five read; Silver moves its users'
   existing settings there once. No new packages to depend on, but sonic-qt-theme-bridge, sonic-silver and sonic-win
-  need the sonic-frameworks-color-scheme release with `KToolsArea` (below); sonic-frameworks-quick-ui adds API
+  need the sonic-frameworks-color-scheme release with `KToolsArea`; sonic-frameworks-quick-ui adds API
   (`Theme.toolsArea`) without breaking binary compatibility.
-- **License change: sonic-frameworks-color-scheme, sonic-frameworks-quick-ui, sonic-qt-theme-bridge,
-  sonic-frameworks-quick-desktop-style and sonic-frameworks-quick-silver-style now contain GPL-2.0-or-later code**
-  (the new tools-area files), so their binaries as a whole are GPL-2.0-or-later. Update the license field of those
-  packages.
-- **sonic-frameworks-color-scheme gains `KToolsArea`**, the one implementation of the shared titlebar and toolbar
-  transparency settings; sonic-silver, sonic-win and sonic-qt-theme-bridge use it. It adds API without breaking
-  binary compatibility; upgrade it with them.
+- **License change: sonic-qt-theme-bridge and sonic-frameworks-quick-silver-style now contain GPL-2.0-or-later
+  code** (the new tools-area files), so their binaries as a whole are GPL-2.0-or-later. Update the license field of
+  those packages.
 - **sonic-plasma5-support-library is no longer released.** It has left the Core release list, so it gets no
   new tags. Keep its 6.8.0 package or replace it with your distribution's KDE `plasma5support`.
 - **Restart the display manager after upgrading sonic-login-manager.** The greeter, the settings page and the helper now talk over a new protocol, and old and new versions can't talk to each other.
@@ -400,7 +412,6 @@ yet ship in the upcoming release or aren't built on their own.
 
 | Package | First release | SonicDE release |
 |---|---|---|
-| qxlibre | — | Upcoming |
 | sonic-accounts-integration | 26.08.0 | 6.7.5 |
 | sonic-activities | 6.6.4 | 6.6.4 |
 | sonic-activities-stats | 6.7.3 | 6.7.3 |
