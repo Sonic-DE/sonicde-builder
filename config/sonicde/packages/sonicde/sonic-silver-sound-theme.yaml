@@ -6,18 +6,11 @@ sources:
                 url: ${sonicde_git}/${@basename}.git
                 depth: ${sonic_depth}
                 fetch: ${@SOLUTION::fetch::origin}
-            upstream:
-                url: ${plasma_git}ocean-sound-theme.git
-                depth: ${upstream_depth}
-                fetch: ${@SOLUTION::fetch::upstream}
         config:
-            autopick.enabled: 'true'
-            autopick.upstream: upstream/Plasma/6.8
+            autopick.enabled: 'false'
             autopick.master: origin/${master_branch}
-            autopick.tracker: origin/tracking/plasma-6.8
             advice.detachedHead: 'false'
             remote.origin.tagOpt: --no-tags
-            remote.upstream.tagOpt: --no-tags
         local-branch: ${master_branch}
 
 master_branch: master
