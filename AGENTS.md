@@ -243,6 +243,10 @@ reporting the task complete.**
 - Never mention version bumps ("Release X.Y.Z" commits) or commits that only
   add or edit `RELEASE-NOTES.md`, not even under "Behind the scenes". A release
   whose only commits are those gets the "No SonicDE-specific changes" line.
+- Point releases (`6.8.0.1`, `6.8.1.1`, ...) can be tagged off master, so
+  their changes come back as new commits in the next master release. A change
+  already listed in an earlier release section isn't listed again, even
+  reworded; compare against every section since the last full release.
 
 Release order for a group (`core`, `frameworks` or `system`):
 
