@@ -464,7 +464,7 @@ def bump_category(
                 )
                 failures += 1
             else:
-                print(f"[{repo_name}] pushed master to origin (no tags)")
+                print(f"[{repo_name}] pushed master to origin")
 
         processed += 1
 

@@ -426,7 +426,7 @@ class TestPush(VersionBumpTestBase):
 
         r = self._run_bump("plasma", "6.7.5")
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("pushed master to origin (no tags)", r.stdout)
+        self.assertIn("pushed master to origin", r.stdout)
 
         # No tag, including pre-existing local ones, reaches the bare origin
         self.assertEqual(self._tags(origin), [])
