@@ -103,6 +103,10 @@ GPL-2.0-only or GPL-3.0-only.
   new tags. Keep its 6.8.0 package or replace it with your distribution's KDE `plasma5support`.
 - **Restart the display manager after upgrading sonic-login-manager.** The greeter, the settings page and the helper now talk over a new protocol, and old and new versions can't talk to each other.
 - **Upgrade sonic-desktop-interface as a whole.** The keyboard layout applet and the keyboard service now use keyboard protocol version 2. The screen locker and the applet switch to the new protocol the next time they start.
+- **The TV and mobile login sessions have new file names** in `xsessions`: `plasma-bigscreen-x11.desktop` is
+  now `sonicde-tv.desktop` and `plasma-mobile.desktop` is now `sonicde-mobile.desktop`. Update the file lists of
+  sonic-tv-interface and sonic-mobile-interface. Display managers remember sessions by file name, so people who
+  used one of them pick it again once after upgrading.
 - **Set the root log directory at build time** with `-DSONIC_LOGGING_ROOT_DIR=…` in sonic-frameworks-logging (default `/var/log/sonic`). sonic-login-manager's `LOG_FILE` option is gone.
 - **Ship or update logrotate rules** to cover:
   - `/var/log/sonic/*.last`;

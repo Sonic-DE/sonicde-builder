@@ -269,6 +269,15 @@ update the developer documentation under `developer/` in the same way. When a ta
 a public API, regenerate the API reference with `./generate-api-docs` and include the
 regenerated `api/` files.
 
+## Translations
+
+Never drop translations. When a task renames or rewords a translated string (for example
+`Name[..]` and `Comment[..]` in `.desktop` files, `.json` metadata or `.po` entries), translate
+the new text into every language SonicDE ships translations for (the union of the `po/` language folders
+across `src/sonicde/*`), not only the languages that already had one. Reuse
+wording SonicDE already ships, such as the "Sonic Desktop Environment" translations in
+sonic-workspace's login sessions, so the same terms read the same everywhere.
+
 ## Adding or Renaming SonicDE Packages
 
 Release version edits and tagging are separate: `version-bump-core`,
