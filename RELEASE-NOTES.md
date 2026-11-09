@@ -61,6 +61,10 @@ GPL-2.0-only or GPL-3.0-only.
 
 - **sonic-login-manager** now requires sonic-frameworks-init-info, sonic-frameworks-ipc and sonic-frameworks-logging.
 - **sonic-desktop-interface** and **sonic-screenlocker** now require sonic-frameworks-ipc and sonic-frameworks-logging.
+- **sonic-win** now requires sonic-frameworks-ipc and the xcb XTEST library (`xcb-xtest`, part of libxcb). It installs
+  a new CMake package, `SonicWinDwellClickerIpc`, with the header `SonicWin/DwellClickerIpc.h`; add them to your
+  package's file list. **sonic-desktop-interface** now needs it to build, and installs two new QML modules,
+  `org.sonicde.dwellclicker.ipc` and `org.kde.plasma.access.kcm`; add them to your package's file list.
 - **sonic-firewall** now requires sonic-frameworks-init-info, sonic-frameworks-ipc and sonic-frameworks-logging.
 - **sonic-workspace-addons** now requires sonic-frameworks-logging. Its new Sonic Menu widget needs
   sonic-workspace at runtime (the Kicker and session QML modules); it replaces the kMenu widget from the KDE Store

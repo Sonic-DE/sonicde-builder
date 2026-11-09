@@ -30,6 +30,7 @@ build-depends:
 depends:
     - sonicde/sonic-decoration
     - sonicde/sonic-frameworks-idle-tracker
+    - sonicde/sonic-frameworks-ipc
     - sonicde/sonic-frameworks-logging
     - sonicde/sonic-frameworks-settings-utils
     - sonicde/sonic-frameworks-svg
