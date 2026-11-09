@@ -345,7 +345,9 @@ Key invariants:
 - If the rebased branch has the same commit as master, no PR is created;
   the temporary branch is removed and the tracker advances.
 - Existing remote sync branches are checked before starting new work so
-  an open or unmerged sync branch is not duplicated.
+  an open or unmerged sync branch is not duplicated. A branch whose
+  commits are all patch-equivalent to master (merged, then history
+  rewritten) counts as merged and is removed instead of getting a PR.
 
 `sync-tags` (via `scripts/sync_tags.py`) is a separate flow: it mirrors
 each upstream's latest release tag onto the patch-equivalent SonicDE

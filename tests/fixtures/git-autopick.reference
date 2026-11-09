@@ -155,7 +155,8 @@ if [ -n "$UPTO_TAG" ]; then
     CURRENT_UPSTREAM="$TAG_COMMIT"
     UPSTREAM_LABEL="$UPTO_TAG"
 fi
-CURRENT_TRACKER=`git rev-parse "$AUTOPICK_TRACKER" 2>/dev/null` || {
+# The full name, so a tag such as tracking/master can't stand in for the tracker branch.
+CURRENT_TRACKER=`git rev-parse --verify --quiet "refs/remotes/$AUTOPICK_TRACKER^{commit}"` || {
     msg "tracker branch $AUTOPICK_TRACKER missing; seeding it from $AUTOPICK_UPSTREAM"
     git push -q "$AUTOPICK_TRACKER_REMOTE" "+${CURRENT_UPSTREAM}:refs/heads/${AUTOPICK_TRACKER_BRANCH}" \
         || die "failed to seed tracker branch $AUTOPICK_TRACKER"
@@ -302,6 +303,11 @@ check_work_waiting() {
     # Check if the branch is ahead of master
     local ahead
     ahead=$(git rev-list --count "$AUTOPICK_MASTER"..origin/"$TEMP_BRANCH" 2>/dev/null || echo 0)
+    # Master may hold the branch's changes under other hashes (merged, then history rewritten).
+    if [ "$ahead" -gt 0 ] && ! git cherry "$AUTOPICK_MASTER" origin/"$TEMP_BRANCH" | grep -q '^+'; then
+        msg "=== remote $TEMP_BRANCH has only changes that are already in master"
+        ahead=0
+    fi
     if [ "$ahead" -gt 0 ]; then
         msg "=== creating PR for existing branch $TEMP_BRANCH with $ahead unmerged commits"
         gh repo set-default "$remote_url"

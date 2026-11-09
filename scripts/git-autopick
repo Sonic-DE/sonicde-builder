@@ -303,6 +303,11 @@ check_work_waiting() {
     # Check if the branch is ahead of master
     local ahead
     ahead=$(git rev-list --count "$AUTOPICK_MASTER"..origin/"$TEMP_BRANCH" 2>/dev/null || echo 0)
+    # Master may hold the branch's changes under other hashes (merged, then history rewritten).
+    if [ "$ahead" -gt 0 ] && ! git cherry "$AUTOPICK_MASTER" origin/"$TEMP_BRANCH" | grep -q '^+'; then
+        msg "=== remote $TEMP_BRANCH has only changes that are already in master"
+        ahead=0
+    fi
     if [ "$ahead" -gt 0 ]; then
         msg "=== creating PR for existing branch $TEMP_BRANCH with $ahead unmerged commits"
         gh repo set-default "$remote_url"
