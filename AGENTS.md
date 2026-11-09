@@ -259,6 +259,16 @@ renamed", "Packages removed", "Dependency changes" or "Actions". Keep the
 package index at the end current as well. When a release is tagged, rename
 "Upcoming release" to that release and add it to the table at the top.
 
+## User and API Documentation
+
+When a task adds a user-visible feature or changes how an existing one works, update the
+user documentation in `src/sonicde/sonic-docs` (new page or edit, listed in `toc.yaml`)
+before reporting the task complete. When a task changes a developer-facing feature or
+workflow (building, syncing, releasing, packaging, testing, frameworks and their use),
+update the developer documentation under `developer/` in the same way. When a task changes
+a public API, regenerate the API reference with `./generate-api-docs` and include the
+regenerated `api/` files.
+
 ## Adding or Renaming SonicDE Packages
 
 Release version edits and tagging are separate: `version-bump-core`,
