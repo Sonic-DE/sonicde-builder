@@ -60,6 +60,7 @@ depends:
     - sonicde/sonic-frameworks-widgets-addons
     - sonicde/sonic-frameworks-windowsystem
     - sonicde/sonic-interface-libraries
+    - sonicde/sonic-keyboard
     - sonicde/sonic-network-manager
     - sonicde/sonic-screen
     - sonicde/sonic-screen-library

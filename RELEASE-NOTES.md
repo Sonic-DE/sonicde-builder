@@ -75,6 +75,8 @@ GPL-2.0-only or GPL-3.0-only.
   can show a terminal; add it to your package's file list. The KPart stays.
 - **sonic-ecco** and **sonic-workspace-addons** now need sonic-terminal at runtime (the terminal panel and the
   Terminal Panel widget).
+- **sonic-tv-interface** now needs sonic-keyboard at runtime: its session selects the `sonicvirtualkeyboard` input
+  method for the on-screen keyboard.
 - **sonic-theme-sdk** no longer needs Plasma5Support. Its `plasmaengineexplorer` program, man page and
   translations are gone; drop them from your package's file list.
 - **sonic-frameworks-doctools** now requires sonic-frameworks-logging; build it first. It installs a new
