@@ -339,7 +339,10 @@ Key invariants:
 - Sync stops at an upstream release tag, not the branch tip: `sync` looks
   up the repository's line in `config/sync-upstream-tags`, else its release
   group's, and passes it as `git-autopick --upto-tag`. A repository without
-  a tag isn't synced; a tracker already past the tag is left alone.
+  a tag isn't synced; a tracker already past the tag is left alone. That
+  includes a tag upstream put on a release branch, once SonicDE's own
+  release tag for that version (`6.31.0` for `v6.31.0`) is on master; any
+  other tag off the branch is refused.
 - The temporary sync branch starts from that tag and rebases the
   tracker-to-tag work onto master.
 - If the rebased branch has the same commit as master, no PR is created;

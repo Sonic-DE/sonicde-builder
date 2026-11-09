@@ -66,6 +66,7 @@ fi
 
 # --upto-tag TAG: sync only up to this upstream release tag, not the branch tip.
 UPTO_TAG=""
+TAG_OFF_BRANCH=""
 if [ "${1:-}" = "--upto-tag" ]; then
     [ "${2:-}" ] || die "missing tag after --upto-tag"
     UPTO_TAG="$2"
@@ -149,14 +150,15 @@ if [ -n "$UPTO_TAG" ]; then
     git fetch --quiet --no-tags --force "$AUTOPICK_UPSTREAM_REMOTE" "+refs/tags/$UPTO_TAG:$TAG_REF" \
         || die "upstream has no tag $UPTO_TAG"
     TAG_COMMIT=`git rev-parse "$TAG_REF^{commit}" 2>/dev/null` || die "cant get commit of tag $UPTO_TAG"
-    git merge-base --is-ancestor "$TAG_COMMIT" "$CURRENT_UPSTREAM" \
-        || die "tag $UPTO_TAG is not on $AUTOPICK_UPSTREAM"
+    # Upstream may tag a release branch; that's only accepted below when already released.
+    git merge-base --is-ancestor "$TAG_COMMIT" "$CURRENT_UPSTREAM" || TAG_OFF_BRANCH=1
     msg "=== syncing up to upstream tag $UPTO_TAG"
     CURRENT_UPSTREAM="$TAG_COMMIT"
     UPSTREAM_LABEL="$UPTO_TAG"
 fi
 # The full name, so a tag such as tracking/master can't stand in for the tracker branch.
 CURRENT_TRACKER=`git rev-parse --verify --quiet "refs/remotes/$AUTOPICK_TRACKER^{commit}"` || {
+    [ -z "$TAG_OFF_BRANCH" ] || die "tag $UPTO_TAG is not on $AUTOPICK_UPSTREAM"
     msg "tracker branch $AUTOPICK_TRACKER missing; seeding it from $AUTOPICK_UPSTREAM"
     git push -q "$AUTOPICK_TRACKER_REMOTE" "+${CURRENT_UPSTREAM}:refs/heads/${AUTOPICK_TRACKER_BRANCH}" \
         || die "failed to seed tracker branch $AUTOPICK_TRACKER"
@@ -185,6 +187,17 @@ checkout_master_branch() {
         git checkout -q -b "$AUTOPICK_MASTER_BRANCH" "$AUTOPICK_MASTER"
     fi
 }
+
+if [ -n "$TAG_OFF_BRANCH" ]; then
+    # Past the tag once SonicDE has released the same version (its tag has no "v") from master.
+    OUR_RELEASE="${UPTO_TAG#v}"
+    our_commit=`git rev-parse --verify --quiet "refs/tags/$AUTOPICK_MASTER_REMOTE/$OUR_RELEASE^{commit}"` \
+        && git merge-base --is-ancestor "$our_commit" "$CURRENT_MASTER" \
+        || die "tag $UPTO_TAG is not on $AUTOPICK_UPSTREAM"
+    msg "already synced past $UPTO_TAG (released as $OUR_RELEASE); tracker unchanged"
+    checkout_master_branch
+    exit 0
+fi
 
 if [ -n "$UPTO_TAG" ] && [ "$CURRENT_UPSTREAM" != "$CURRENT_TRACKER" ] \
         && git merge-base --is-ancestor "$CURRENT_UPSTREAM" "$CURRENT_TRACKER"; then

@@ -749,6 +749,36 @@ esac
         self.assertIn("tag v2.0 is not on upstream/master", r.stderr)
         self.assertEqual(self._tracker(work), before)
 
+    def test_tag_on_a_release_branch_already_released_syncs_nothing(self):
+        """Upstream tagged its release branch; SonicDE master already has its own release tag."""
+        work, origin, upstream = self._setup_repo()
+        shas = self._upstream_commits(upstream, ["fork point", "after the fork"], tag_after=0)
+        up_work = self.root / "up_work"
+        git(up_work, "checkout", "-q", "-b", "release", shas[0])
+        (up_work / "release.txt").write_text("release fix")
+        git(up_work, "add", ".")
+        git(up_work, "commit", "-q", "-m", "release fix")
+        fix = git(up_work, "rev-parse", "HEAD").stdout.strip()
+        git(up_work, "tag", "-a", "v2.0", "-m", "v2.0")
+        git(up_work, "push", "origin", "release", "v2.0")
+        git(work, "fetch", "upstream")
+        git(work, "merge", "--ff-only", shas[1])
+        git(work, "cherry-pick", fix)
+        git(work, "tag", "-a", "2.0", "-m", "Release 2.0")
+        git(work, "push", "origin", "master", "2.0")
+        git(work, "push", "origin", f"+{shas[1]}:refs/heads/tracking/master")
+        # The builder fetches origin's tags to refs/tags/origin/*.
+        git(work, "config", "--add", "remote.origin.fetch", "+refs/tags/*:refs/tags/origin/*")
+        git(work, "fetch", "origin")
+        marker = self.root / "gh-called"
+
+        r = self._run(work, "--upto-tag", "v2.0", marker=marker)
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("already synced past v2.0", r.stderr)
+        self.assertFalse(marker.exists(), "gh was called")
+        self.assertEqual(self._tracker(work), shas[1])
+
     def _upstream_commits(self, upstream: Path, subjects: list[str],
                           tag_after: int) -> list[str]:
         """Commit each subject to its own file upstream; tag v1.0 after commit tag_after."""
