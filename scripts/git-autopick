@@ -155,7 +155,8 @@ if [ -n "$UPTO_TAG" ]; then
     CURRENT_UPSTREAM="$TAG_COMMIT"
     UPSTREAM_LABEL="$UPTO_TAG"
 fi
-CURRENT_TRACKER=`git rev-parse "$AUTOPICK_TRACKER" 2>/dev/null` || {
+# The full name, so a tag such as tracking/master can't stand in for the tracker branch.
+CURRENT_TRACKER=`git rev-parse --verify --quiet "refs/remotes/$AUTOPICK_TRACKER^{commit}"` || {
     msg "tracker branch $AUTOPICK_TRACKER missing; seeding it from $AUTOPICK_UPSTREAM"
     git push -q "$AUTOPICK_TRACKER_REMOTE" "+${CURRENT_UPSTREAM}:refs/heads/${AUTOPICK_TRACKER_BRANCH}" \
         || die "failed to seed tracker branch $AUTOPICK_TRACKER"

@@ -334,7 +334,8 @@ Key invariants:
 
 - The tracker records an upstream commit that has been processed. It
   always remains on upstream history and is never replaced by a rebased
-  commit identity.
+  commit identity. It's read as `refs/remotes/<autopick.tracker>`, so a tag
+  with the same name (such as `tracking/master`) can't stand in for it.
 - Sync stops at an upstream release tag, not the branch tip: `sync` looks
   up the repository's line in `config/sync-upstream-tags`, else its release
   group's, and passes it as `git-autopick --upto-tag`. A repository without

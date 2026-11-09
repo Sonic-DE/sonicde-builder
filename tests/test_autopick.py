@@ -942,5 +942,90 @@ class TestSyncTagsFile(unittest.TestCase):
         self.assertTrue(groups <= set(names), "a release group has no tag")
 
 
+class TestRefResolution(AutopickTestBase):
+
+    def _fake_gh(self) -> tuple[dict[str, str], Path]:
+        """gh that lists no open PR and records and refuses everything else."""
+        calls = self.root / "gh-calls"
+        fake = self.root / "bin" / "gh"
+        fake.parent.mkdir(parents=True, exist_ok=True)
+        fake.write_text(f"""#!/bin/bash
+printf '%s\\n' "$*" >> "{calls}"
+case "$1 $2" in
+    "pr list") exit 0 ;;
+    *) exit 1 ;;
+esac
+""")
+        fake.chmod(0o755)
+        return {**os.environ, "PATH": f"{fake.parent}:{os.environ['PATH']}"}, calls
+
+    def test_tag_named_like_the_tracker_does_not_replace_it(self):
+        """A tag called tracking/master must not stand in for the tracker branch."""
+        work, origin, upstream = self._setup_repo()
+        c0 = git(work, "rev-parse", "HEAD").stdout.strip()
+        tip = self._add_upstream_commits(upstream, 2, work)[-1]
+
+        # Synced: master has the upstream commits plus its own, the tracker is at the tip.
+        git(work, "merge", "--ff-only", tip)
+        commit(work, "downstream change", "sonic")
+        git(work, "push", "origin", "master")
+        git(work, "push", "origin", f"+{tip}:refs/heads/tracking/master")
+
+        # An old tag with the tracker's name, fetched the way the builder fetches origin's tags.
+        git(work, "push", "origin", f"{c0}:refs/tags/tracking/master")
+        git(work, "config", "--add", "remote.origin.fetch", "+refs/tags/*:refs/tags/origin/*")
+        git(work, "fetch", "origin")
+        # Fetching also follows the tag locally, as happened in sonic-frameworks-quick-ui.
+        self.assertEqual(git(work, "rev-parse", "refs/tags/tracking/master").stdout.strip(), c0)
+
+        env, calls = self._fake_gh()
+        r = subprocess.run([str(SCRIPTS / "git-autopick")], cwd=work,
+                           capture_output=True, text=True, env=env)
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("already synced", r.stderr)
+        self.assertNotIn("no new changes after rebase", r.stderr,
+                         "the old range was synced again from the tag")
+        self.assertEqual(git(work, "rev-parse", "refs/remotes/origin/tracking/master").stdout.strip(), tip)
+
+    def test_sync_branch_merged_under_other_hashes_is_removed(self):
+        """A leftover sync branch whose changes master has, with other hashes, gets no PR."""
+        work, origin, upstream = self._setup_repo()
+        new = self._add_upstream_commits(upstream, 1, work)[-1]
+
+        # The leftover branch: one change that master later took as its own commit.
+        def commit_file(name: str, msg: str) -> str:
+            (work / name).write_text(msg)
+            git(work, "add", name)
+            git(work, "commit", "-m", msg)
+            return git(work, "rev-parse", "HEAD").stdout.strip()
+
+        git(work, "checkout", "-q", "-b", "leftover", "origin/master")
+        leftover = commit_file("earlier.txt", "earlier synced change")
+        git(work, "push", "origin", f"{leftover}:refs/heads/pr/sync-with-upstream")
+        git(work, "checkout", "-q", "master")
+        # The new upstream change is already in master as well, so the sync itself is empty.
+        git(work, "cherry-pick", new)
+        # On another parent, so master's copy of the leftover change has a different hash.
+        git(work, "cherry-pick", leftover)
+        self.assertNotEqual(git(work, "rev-parse", "HEAD").stdout.strip(), leftover)
+        commit_file("sonic.txt", "downstream change")
+        git(work, "push", "origin", "master")
+        git(work, "fetch", "origin")
+
+        env, calls = self._fake_gh()
+        r = subprocess.run([str(SCRIPTS / "git-autopick")], cwd=work,
+                           capture_output=True, text=True, env=env)
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        commands = calls.read_text().splitlines() if calls.exists() else []
+        self.assertFalse([c for c in commands if c.startswith("pr create")],
+                         f"a PR was opened from the leftover branch: {commands}")
+        self.assertEqual(git(work, "ls-remote", "--heads", "origin",
+                             "pr/sync-with-upstream").stdout.strip(), "",
+                         "the leftover branch was not removed")
+        self.assertEqual(git(work, "rev-parse", "refs/remotes/origin/tracking/master").stdout.strip(), new)
+
+
 if __name__ == "__main__":
     unittest.main()
