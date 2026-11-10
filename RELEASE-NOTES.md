@@ -60,6 +60,9 @@ GPL-2.0-or-later.
   gone (its programs log through Sonic Logging now), so drop any `QT_LOGGING_RULES` that name it.
 - **sonic-win** now uses `KToolsArea::followDecoration()`, new in sonic-frameworks-color-scheme after 6.31.0.1:
   build it against the next sonic-frameworks-color-scheme release.
+- **sonic-mobile-interface** no longer needs sonic-pipewire (KPipeWire). It now needs sonic-frameworks-logging,
+  Qt 6.11 Multimedia with the FFmpeg backend (with a VP9 or H.264 encoder) and xcb-randr. It installs a new
+  program, `sonic-mobile-screenrecorder`, in the libexec directory; add it to your package's file list.
 
 ### Actions
 

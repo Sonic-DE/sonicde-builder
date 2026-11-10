@@ -31,9 +31,9 @@ build-depends:
     - os-installed/libxcb
 
 depends:
+    - sonicde/sonic-frameworks-logging
     - sonicde/sonic-frameworks-modemmanager
     - sonicde/sonic-frameworks-networkmanager
     - sonicde/sonic-frameworks-quick-ui-addons
     - sonicde/sonic-keyboard
-    - sonicde/sonic-pipewire
     - sonicde/sonic-win
