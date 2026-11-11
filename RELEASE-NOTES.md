@@ -63,6 +63,10 @@ GPL-2.0-or-later.
 - **sonic-mobile-interface** no longer needs sonic-pipewire (KPipeWire). It now needs sonic-frameworks-logging,
   Qt 6.11 Multimedia with the FFmpeg backend (with a VP9 or H.264 encoder) and xcb-randr. It installs a new
   program, `sonic-mobile-screenrecorder`, in the libexec directory; add it to your package's file list.
+- **sonic-decoration** now needs Qt 6.11 Widgets and D-Bus, sonic-frameworks-logging and
+  sonic-frameworks-internationalization (it already used KF6 I18n). It installs a new library,
+  `libkdecorations3titlebarmenu` (`KDecoration3::TitleBarMenu`), with its headers; add them to your package's
+  file list. sonic-silver links it, so build sonic-decoration first.
 
 ### Actions
 
@@ -72,6 +76,9 @@ GPL-2.0-or-later.
 - **sonic-frameworks-color-scheme gains `KToolsArea`**, the one implementation of the shared titlebar and toolbar
   transparency settings; sonic-silver, sonic-win and sonic-qt-theme-bridge use it. It adds API without breaking
   binary compatibility; upgrade it with them.
+- **License change: sonic-decoration now contains GPL code.** The new `libkdecorations3titlebarmenu` is
+  GPL-2.0-or-later (parts GPL-2.0-only OR GPL-3.0-only, and the bundled D-Bus menu importer
+  LGPL-2.0-or-later); `libkdecorations3` itself stays LGPL. Add the GPL licenses to the package's license field.
 
 ## 6.8.2 (November 2026)
 
