@@ -399,6 +399,10 @@ specific scenario. The test baseline (captured `pytest -v` output) can
 be regenerated into `state/logs/test-baseline.log`; it is a local-only
 artifact, gitignored along with the rest of `state/`.
 
+Give commit messages and file lists only after the user has tested the
+work on the test VM and said it works. Until then, report the build and
+what to check, and nothing about commits.
+
 ## Graphify
 
 When the user invokes `/graphify`, load and follow the installed
