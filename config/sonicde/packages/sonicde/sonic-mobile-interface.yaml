@@ -36,4 +36,5 @@ depends:
     - sonicde/sonic-frameworks-networkmanager
     - sonicde/sonic-frameworks-quick-ui-addons
     - sonicde/sonic-keyboard
+    - sonicde/sonic-silver
     - sonicde/sonic-win

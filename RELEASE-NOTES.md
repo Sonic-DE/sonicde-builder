@@ -72,6 +72,10 @@ GPL-2.0-or-later.
   `org.kde.plasma.bigscreen` is replaced by `org.sonicde.silver.tv.light` and `org.sonicde.silver.tv.dark`, and the
   `plasma_lookandfeel_org.kde.plasma.bigscreen` translations are gone; update your package's file list.
   sonic-workspace moves users of the old theme over at login.
+- **sonic-mobile-interface** now needs sonic-silver at runtime, for the same reason: its global theme is now Silver
+  Light - Mobile and Silver Dark - Mobile. The look-and-feel folder `org.kde.silver.mobile` is replaced by
+  `org.sonicde.silver.mobile.light` and `org.sonicde.silver.mobile.dark`; update your package's file list.
+  sonic-workspace moves users of the old theme over at login.
 
 ### Actions
 
