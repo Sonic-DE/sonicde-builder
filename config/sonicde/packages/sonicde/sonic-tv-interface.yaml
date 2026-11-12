@@ -64,6 +64,7 @@ depends:
     - sonicde/sonic-network-manager
     - sonicde/sonic-screen
     - sonicde/sonic-screen-library
+    - sonicde/sonic-silver
     - sonicde/sonic-terminal-tools
     - sonicde/sonic-win
     - sonicde/sonic-workspace

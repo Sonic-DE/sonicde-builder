@@ -67,6 +67,11 @@ GPL-2.0-or-later.
   sonic-frameworks-internationalization (it already used KF6 I18n). It installs a new library,
   `libkdecorations3titlebarmenu` (`KDecoration3::TitleBarMenu`), with its headers; add them to your package's
   file list. sonic-silver links it, so build sonic-decoration first.
+- **sonic-tv-interface** now needs sonic-silver at runtime: its TV global themes, Silver Light - TV and Silver
+  Dark - TV, use Silver's style, colours, icons and splash screen. The look-and-feel folder
+  `org.kde.plasma.bigscreen` is replaced by `org.sonicde.silver.tv.light` and `org.sonicde.silver.tv.dark`, and the
+  `plasma_lookandfeel_org.kde.plasma.bigscreen` translations are gone; update your package's file list.
+  sonic-workspace moves users of the old theme over at login.
 
 ### Actions
 
