@@ -5,3 +5,4 @@ type: system
 platform-packages:
     debian: docbook-xsl
     devuan: docbook-xsl
+    freebsd: docbook-xsl

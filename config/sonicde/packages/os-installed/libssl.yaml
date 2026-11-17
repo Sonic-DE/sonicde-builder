@@ -5,3 +5,4 @@ pkg-config: libssl
 platform-packages:
     debian: libssl-dev
     devuan: libssl-dev
+    freebsd: base

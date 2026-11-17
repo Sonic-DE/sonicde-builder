@@ -5,3 +5,4 @@ pkg-config: libgcrypt
 platform-packages:
     debian: libgcrypt20-dev
     devuan: libgcrypt20-dev
+    freebsd: libgcrypt

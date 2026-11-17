@@ -5,3 +5,4 @@ platform-packages:
     debian: xserver-xorg-input-wacom
     devuan: xserver-xorg-input-wacom
     arch: xf86-input-wacom
+    freebsd: xlibre-xf86-input-wacom

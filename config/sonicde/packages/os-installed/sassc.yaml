@@ -6,3 +6,4 @@ platform-packages:
     debian: sassc
     devuan: sassc
     arch: sassc
+    freebsd: sassc

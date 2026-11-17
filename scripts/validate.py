@@ -13,6 +13,9 @@ import sys
 import tempfile
 from pathlib import Path
 
+# A platform-packages value meaning "ships with the OS itself; nothing to install or probe".
+BASE_SYSTEM = "base"
+
 
 def validate_pkg_config(pkg_name: str, modules: list[str]) -> int:
     """Run pkg-config --modversion for each declared module."""
@@ -79,7 +82,8 @@ def _probe_cmake_package(package_spec: str) -> bool:
             "project(SonicDECMakeProbe LANGUAGES CXX)\n"
             "include(CMakeFindDependencyMacro)\n"
             f"find_package({package_spec} REQUIRED)\n")
-        result = subprocess.run(["cmake", "-S", str(root), "-B", str(root / "build")],
+        # Ninja, like the builds: CMake's default generator needs GNU make (absent on FreeBSD).
+        result = subprocess.run(["cmake", "-G", "Ninja", "-S", str(root), "-B", str(root / "build")],
                                 capture_output=True, text=True)
     return result.returncode == 0
 
@@ -109,6 +113,10 @@ def validate_system_packages(model: dict) -> int:
     errors = 0
     for name, pkg in sorted(model["packages"].items()):
         if pkg.get("type") != "system":
+            continue
+        if model.get("platform") == "freebsd" and \
+                (pkg.get("platform_packages") or {}).get("freebsd") == BASE_SYSTEM:
+            print(f"[{name}] part of the FreeBSD base system")
             continue
         modules = pkg.get("pkg_config") or []
         if isinstance(modules, str):
@@ -151,7 +159,7 @@ message(STATUS "Qt6_DIR: ${Qt6_DIR}")
         (tmp / "CMakeLists.txt").write_text(qt_probe)
         build = tmp / "build"
         build.mkdir()
-        args = ["cmake", str(tmp)]
+        args = ["cmake", "-G", "Ninja", str(tmp)]
         if install_prefix:
             args.append(f"-DCMAKE_PREFIX_PATH={install_prefix}")
         r = subprocess.run(args + ["-B", str(build)],

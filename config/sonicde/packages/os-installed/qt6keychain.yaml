@@ -5,3 +5,4 @@ platform-packages:
     debian: qtkeychain-qt6-dev
     devuan: qtkeychain-qt6-dev
     arch: qtkeychain-qt6
+    freebsd: qtkeychain-qt6

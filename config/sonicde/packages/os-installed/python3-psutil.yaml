@@ -5,3 +5,4 @@ platform-packages:
     debian: python3-psutil
     devuan: python3-psutil
     arch: python-psutil
+    freebsd: py312-psutil

@@ -1,0 +1,8 @@
+provides: sys/libblkid
+type: system
+platforms: [linux]
+pkg-config: blkid
+platform-packages:
+    debian: libblkid-dev
+    devuan: libblkid-dev
+    arch: util-linux

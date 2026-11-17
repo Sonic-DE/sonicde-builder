@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import platform as host_platform
 import re
 import sys
 from collections import defaultdict, deque
@@ -31,7 +32,11 @@ PACKAGE_FIELDS = {
     "@PROJECT", "@SOLUTION", "source-dir", "install-prefix", "parallel",
     "@statdir", "@builddir", "@destdir", "@binary-tarball", "@binary-image",
     "build",  # structured build config (e.g. build.cmake.args)
+    "platforms",  # kernel names the package is built on; absent means all
 }
+
+# Lowercase platform.system() values the builder supports.
+SUPPORTED_PLATFORMS = {"linux", "freebsd"}
 
 GIT_FIELDS = {
     "ref", "remotes", "url", "depth", "fetch", "local-branch",
@@ -184,6 +189,7 @@ class Package:
     cmake_packages: list[str] = field(default_factory=list)
     cmake_packages_any: list[str] = field(default_factory=list)
     platform_packages: dict[str, str] = field(default_factory=dict)
+    platforms: list[str] = field(default_factory=list)
     cmake_extra_args: list[str] = field(default_factory=list)
     git: GitSpec | None = None
     master_branch: str = ""
@@ -204,6 +210,8 @@ class Closure:
     reverse: dict[str, list[str]] = field(default_factory=dict)
     topo_order: list[str] = field(default_factory=list)
     reasons: dict[str, list[str]] = field(default_factory=dict)
+    # packages left out on this platform -> what needed them
+    skipped: dict[str, list[str]] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -213,7 +221,12 @@ class Closure:
 class Project:
     def __init__(self, root: str | Path, solution_file: str | Path,
                  solution_defines: dict[str, str] | None = None,
-                 project_defines: dict[str, str] | None = None):
+                 project_defines: dict[str, str] | None = None,
+                 platform: str | None = None):
+        self.platform = (platform or host_platform.system()).lower()
+        if self.platform not in SUPPORTED_PLATFORMS:
+            raise ConfigError(f"unsupported platform {self.platform!r}; "
+                              f"supported: {sorted(SUPPORTED_PLATFORMS)}")
         self.root = Path(root).resolve()
         self.solution_file = Path(solution_file).resolve()
         self.solution_defines = solution_defines or {}
@@ -389,6 +402,14 @@ class Project:
         pp = r.get("platform-packages") or {}
         if isinstance(pp, dict):
             pkg.platform_packages = {str(k): str(v) for k, v in pp.items()}
+        plats = r.get("platforms") or []
+        if isinstance(plats, str): plats = [plats]
+        if not isinstance(plats, list):
+            raise ConfigError(f"{pkg.name}: platforms must be a list")
+        pkg.platforms = [str(p) for p in plats]
+        for p in pkg.platforms:
+            if p not in SUPPORTED_PLATFORMS:
+                raise ConfigError(f"{pkg.name}: unknown platform {p}")
         cea = r.get("cmake-extra-args") or []
         if isinstance(cea, str): cea = [cea]
         pkg.cmake_extra_args = list(cea)
@@ -494,6 +515,10 @@ class Project:
         raise ConfigError(
             f"ambiguous provider for {name}: {ps}")
 
+    def _builds_here(self, ident: str) -> bool:
+        plats = self.packages[ident].platforms
+        return not plats or self.platform in plats
+
     def build_closure(self) -> Closure:
         cl = Closure()
         build_list = self.solution.get("build") or []
@@ -513,6 +538,9 @@ class Project:
             except ConfigError as e:
                 raise ConfigError(f"{reason} -> {e}") from e
 
+            if not self._builds_here(ident):
+                cl.skipped.setdefault(ident, []).append(reason)
+                continue
             if ident in cl.packages:
                 cl.reasons[ident].append(reason)
                 continue
@@ -520,24 +548,23 @@ class Project:
             cl.reasons[ident] = [reason]
 
             pkg = self.packages[ident]
-            for dep in pkg.build_depends:
-                try:
-                    did = self.resolve_name(dep)
-                except ConfigError as e:
-                    raise ConfigError(
-                        f"{ident} build-depends -> {e}") from e
-                cl.edges.append(Edge(ident, did, "build-depends"))
-                cl.reverse.setdefault(did, []).append(ident)
-                queue.append((dep, f"{ident} build-depends"))
-            for dep in pkg.depends:
-                try:
-                    did = self.resolve_name(dep)
-                except ConfigError as e:
-                    raise ConfigError(
-                        f"{ident} depends -> {e}") from e
-                cl.edges.append(Edge(ident, did, "depends"))
-                cl.reverse.setdefault(did, []).append(ident)
-                queue.append((dep, f"{ident} depends"))
+            for kind, deps in (("build-depends", pkg.build_depends),
+                               ("depends", pkg.depends)):
+                for dep in deps:
+                    try:
+                        did = self.resolve_name(dep)
+                    except ConfigError as e:
+                        raise ConfigError(f"{ident} {kind} -> {e}") from e
+                    if not self._builds_here(did):
+                        cl.skipped.setdefault(did, []).append(f"{ident} {kind}")
+                        continue
+                    cl.edges.append(Edge(ident, did, kind))
+                    cl.reverse.setdefault(did, []).append(ident)
+                    queue.append((dep, f"{ident} {kind}"))
+
+        for name in sorted(cl.skipped):
+            print(f"skipped on {self.platform}: {name} "
+                  f"(needed by {', '.join(cl.skipped[name])})", file=sys.stderr)
 
         # cycle detection + topological order
         self._topo(cl)
@@ -681,6 +708,8 @@ class Project:
             ],
             "topo_order": cl.topo_order,
             "reverse": dict(cl.reverse),
+            "platform": self.platform,
+            "skipped": dict(cl.skipped),
         }
 
     def write_model(self, cl: Closure, path: Path) -> None:
@@ -707,6 +736,9 @@ def main(argv: list[str]) -> int:
     ap.add_argument("-build", action="append", default=[], metavar="REPOSITORY",
                     help="replace the solution build list with this repository (repeatable)")
     ap.add_argument("--closure-only", action="store_true")
+    ap.add_argument("-platform", default=None,
+                    help=f"platform to resolve for ({', '.join(sorted(SUPPORTED_PLATFORMS))}); "
+                         "default: this machine's")
     args = ap.parse_args(argv)
 
     sdef = {}
@@ -718,7 +750,10 @@ def main(argv: list[str]) -> int:
         k, _, v = d.partition("=")
         pdef[k] = v
 
-    prj = Project(args.root, args.solution, sdef, pdef)
+    try:
+        prj = Project(args.root, args.solution, sdef, pdef, platform=args.platform)
+    except ConfigError as error:
+        ap.error(str(error))
     prj.load()
     if args.build:
         # Accept the same repository names as ./fetch.
@@ -733,6 +768,9 @@ def main(argv: list[str]) -> int:
         # transitively, must be rebuilt against it. The closure then adds the
         # prerequisites of the targets and of those dependents.
         full = prj.build_closure()
+        for target in targets:
+            if not prj._builds_here(target):
+                ap.error(f"{target} is not built on {prj.platform}")
         dependents: set[str] = set()
         frontier = set(targets)
         while frontier:

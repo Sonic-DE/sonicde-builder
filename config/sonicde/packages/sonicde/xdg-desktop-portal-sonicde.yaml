@@ -50,3 +50,4 @@ depends:
     - sonicde/sonic-frameworks-windowsystem
     - sonicde/sonic-frameworks-xml-gui
     - sonicde/sonic-workspace
+    - sys/linux-input-headers

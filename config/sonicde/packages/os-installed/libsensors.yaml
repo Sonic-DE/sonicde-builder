@@ -1,5 +1,6 @@
 provides: sys/libsensors
 type: system
+platforms: [linux]
 
 platform-packages:
     debian: libsensors-dev

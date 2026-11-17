@@ -24,6 +24,9 @@ upstream_depth: 0
 
 install-prefix: /usr
 
+# LLVM's CMake packages, for sonic-pyside (build-all/build-repo use /usr/local/llvm21/lib/cmake on FreeBSD)
+llvm-cmake-dir: /usr/lib/llvm/21/lib64/cmake
+
 # what to build (can use packages or provides here)
 # just listing all sonic repos alphabetically here
 build:
@@ -131,6 +134,7 @@ build:
     - sonicde/sonic-oxygen-icons
     - sonicde/sonic-oxygen-sounds
     - sonicde/sonic-partition-manager
+    - sonicde/sonic-partition-manager-core
     - sonicde/sonic-pipewire
     - sonicde/sonic-polkit
     - sonicde/sonic-polkit-agent
@@ -200,6 +204,7 @@ package-defaults:
     ossqm_git: ${ossqm_git}
     sonic_depth: ${sonic_depth}
     upstream_depth: ${upstream_depth}
+    llvm_cmake_dir: ${llvm-cmake-dir}
 
 fetch:
     origin:

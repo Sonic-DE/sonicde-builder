@@ -1,0 +1,9 @@
+provides: sys/libclang
+type: system
+
+# Found through the solution's llvm-cmake-dir (build-all/build-repo set it on FreeBSD).
+platform-packages:
+    debian: libclang-dev
+    devuan: libclang-dev
+    arch: clang
+    freebsd: llvm21

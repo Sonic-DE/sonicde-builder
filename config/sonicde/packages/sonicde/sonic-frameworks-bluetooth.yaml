@@ -22,6 +22,9 @@ sources:
 
 master_branch: master
 
+# FreeBSD has no BlueZ.
+platforms: [linux]
+
 buildsystem: cmake
 
 build-depends:

@@ -6,3 +6,4 @@ platform-packages:
     debian: flex
     devuan: flex
     arch: flex
+    freebsd: base

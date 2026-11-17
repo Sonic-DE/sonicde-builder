@@ -5,3 +5,4 @@ platform-packages:
     debian: libxkbcommon-dev
     devuan: libxkbcommon-dev
     arch: libxkbcommon
+    freebsd: libxkbcommon

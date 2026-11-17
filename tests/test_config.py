@@ -108,6 +108,36 @@ class TestPlasmaSyncBranches(unittest.TestCase):
                 self.assertEqual(config["autopick.tracker"], PLASMA_TRACKER_PREFIX + release)
 
 
+class TestRealSolutionPlatforms(unittest.TestCase):
+    """Rules for `platforms` on the real solution."""
+
+    def _closure(self, platform):
+        root = Path(__file__).resolve().parent.parent
+        project = Project(root, root / "config/sonicde/solutions/sonicde.yaml", platform=platform)
+        project.load()
+        return project, project.build_closure()
+
+    def test_nothing_is_skipped_on_linux(self):
+        _, closure = self._closure("linux")
+        self.assertEqual(closure.skipped, {})
+
+    def test_packages_without_freebsd_are_left_out_on_freebsd(self):
+        project, closure = self._closure("freebsd")
+        restricted = {name for name, package in project.packages.items()
+                      if package.platforms and "freebsd" not in package.platforms}
+        self.assertTrue(restricted)
+        # What the FreeBSD closure (or the build list) asks for directly.
+        wanted = set(project.solution.get("build") or [])
+        for package in closure.packages.values():
+            wanted |= {project.resolve_name(d) for d in package.depends + package.build_depends}
+        for name in restricted:
+            with self.subTest(package=name):
+                self.assertNotIn(name, closure.packages)
+                self.assertFalse([e for e in closure.edges
+                                  if name in (e.dependent, e.prerequisite)])
+                self.assertEqual(name in wanted, name in closure.skipped)
+
+
 class TestConfigParsing(unittest.TestCase):
     """Test YAML parsing, interpolation, and closure resolution."""
 

@@ -5,3 +5,4 @@ type: system
 platform-packages:
     debian: docbook-xml
     devuan: docbook-xml
+    freebsd: docbook-xml

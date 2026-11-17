@@ -5,3 +5,4 @@ pkg-config: libavfilter
 platform-packages:
     debian: libavfilter-dev
     devuan: libavfilter-dev
+    freebsd: ffmpeg

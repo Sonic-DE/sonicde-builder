@@ -40,3 +40,4 @@ depends:
     - sonicde/sonic-frameworks-settings-utils
     - sonicde/sonic-frameworks-status-notification
     - sonicde/sonic-pipewire
+    - sys/linux-input-headers

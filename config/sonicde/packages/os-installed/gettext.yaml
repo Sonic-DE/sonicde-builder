@@ -5,3 +5,4 @@ platform-packages:
     debian: gettext
     devuan: gettext
     arch: gettext
+    freebsd: gettext-tools

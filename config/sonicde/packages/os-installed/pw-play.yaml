@@ -7,3 +7,4 @@ platform-packages:
     debian: pipewire-bin
     devuan: pipewire-bin
     arch: pipewire
+    freebsd: pipewire

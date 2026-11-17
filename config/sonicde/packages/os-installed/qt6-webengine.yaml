@@ -7,3 +7,4 @@ platform-packages:
     debian: qt6-webengine-dev
     devuan: qt6-webengine-dev
     arch: qt6-webengine
+    freebsd: qt6-webengine

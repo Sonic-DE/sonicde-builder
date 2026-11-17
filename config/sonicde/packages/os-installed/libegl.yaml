@@ -5,3 +5,4 @@ platform-packages:
     debian: libegl-dev
     devuan: libegl-dev
     arch: libglvnd
+    freebsd: libglvnd

@@ -114,6 +114,7 @@ sonic-oxygen
 sonic-oxygen-icons
 sonic-oxygen-sounds
 sonic-partition-manager
+sonic-partition-manager-core
 sonic-pipewire
 sonic-polkit
 sonic-polkit-agent

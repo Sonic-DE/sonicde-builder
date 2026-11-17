@@ -5,3 +5,4 @@ pkg-config: libpulse
 platform-packages:
     debian: libpulse-dev
     devuan: libpulse-dev
+    freebsd: pulseaudio

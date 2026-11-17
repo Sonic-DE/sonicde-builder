@@ -5,3 +5,4 @@ platform-packages:
     debian: libexiv2-dev
     devuan: libexiv2-dev
     arch: exiv2
+    freebsd: exiv2

@@ -5,3 +5,4 @@ platform-packages:
     debian: libepoxy-dev
     devuan: libepoxy-dev
     arch: libepoxy
+    freebsd: libepoxy

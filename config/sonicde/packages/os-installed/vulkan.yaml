@@ -5,3 +5,4 @@ platform-packages:
     debian: libvulkan-dev
     devuan: libvulkan-dev
     arch: vulkan-headers
+    freebsd: vulkan-loader

@@ -5,3 +5,4 @@ platform-packages:
     debian: libudev-dev
     devuan: libudev-dev
     arch: systemd-libs
+    freebsd: libudev-devd

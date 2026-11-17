@@ -5,3 +5,4 @@ pkg-config: polkit-agent-1
 platform-packages:
     debian: libpolkit-agent-1-dev
     devuan: libpolkit-agent-1-dev
+    freebsd: polkit

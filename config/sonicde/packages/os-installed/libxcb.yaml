@@ -5,3 +5,4 @@ platform-packages:
     debian: libxcb1-dev
     devuan: libxcb1-dev
     arch: libxcb
+    freebsd: libxcb

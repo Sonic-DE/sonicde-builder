@@ -5,3 +5,4 @@ pkg-config: libnm
 platform-packages:
     debian: libnm-dev
     devuan: libnm-dev
+    freebsd: networkmanager-shim

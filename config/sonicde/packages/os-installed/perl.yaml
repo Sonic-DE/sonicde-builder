@@ -6,3 +6,4 @@ platform-packages:
     debian: perl
     devuan: perl
     arch: perl
+    freebsd: perl5

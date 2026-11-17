@@ -6,3 +6,4 @@ platform-packages:
     debian: bison
     devuan: bison
     arch: bison
+    freebsd: bison

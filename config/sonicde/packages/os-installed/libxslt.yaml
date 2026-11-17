@@ -5,3 +5,4 @@ pkg-config: libxslt
 platform-packages:
     debian: libxslt-dev
     devuan: libxslt-dev
+    freebsd: libxslt

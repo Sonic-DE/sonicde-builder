@@ -1,0 +1,9 @@
+provides: sys/linux-input-headers
+type: system
+headers: linux/input.h
+
+platform-packages:
+    debian: linux-libc-dev
+    devuan: linux-libc-dev
+    arch: linux-api-headers
+    freebsd: evdev-proto

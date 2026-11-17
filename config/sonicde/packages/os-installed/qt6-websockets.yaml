@@ -5,3 +5,4 @@ platform-packages:
     debian: qt6-websockets-dev
     devuan: qt6-websockets-dev
     arch: qt6-websockets
+    freebsd: qt6-websockets

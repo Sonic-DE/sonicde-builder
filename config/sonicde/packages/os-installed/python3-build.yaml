@@ -6,3 +6,4 @@ platform-packages:
     debian: python3-build
     devuan: python3-build
     arch: python-build
+    freebsd: py312-build

@@ -303,8 +303,112 @@ class TestRealSolutionStructure(unittest.TestCase):
         for key in ["schema_version", "root", "solution_file",
                      "install_prefix", "source_root", "build_dir",
                      "state_dir", "packages", "edges", "topo_order",
-                     "reverse"]:
+                     "reverse", "platform", "skipped"]:
             self.assertIn(key, model, f"missing key: {key}")
+
+
+class TestPlatforms(unittest.TestCase):
+    """Packages restricted with `platforms` drop out of other platforms' closures."""
+
+    setUp = TestRealSolutionStructure.setUp
+    tearDown = TestRealSolutionStructure.tearDown
+    _write_solution = TestRealSolutionStructure._write_solution
+    _write_pkg = TestRealSolutionStructure._write_pkg
+
+    def _git(self, name):
+        return {"sources": {"git": {
+            "ref": "origin/master",
+            "remotes": {"origin": {"url": f"https://example.com/{name}.git"}},
+        }}}
+
+    def _app_with_linux_only_dep(self):
+        self._write_pkg("sonicde/app", buildsystem="cmake",
+                        depends=["sonicde/linuxonly", "sonicde/common"], **self._git("app"))
+        self._write_pkg("sonicde/linuxonly", buildsystem="cmake", platforms=["linux"],
+                        **self._git("linuxonly"))
+        self._write_pkg("sonicde/common", buildsystem="cmake", **self._git("common"))
+        return self._write_solution(build=["sonicde/app"])
+
+    def _closure(self, sol, platform):
+        prj = Project(self.root, sol, platform=platform)
+        prj.load()
+        return prj, prj.build_closure()
+
+    def test_linux_only_dependency_skipped_on_freebsd(self):
+        sol = self._app_with_linux_only_dep()
+        prj, cl = self._closure(sol, "freebsd")
+        self.assertNotIn("sonicde/linuxonly", cl.packages)
+        self.assertIn("sonicde/common", cl.packages)
+        self.assertFalse([e for e in cl.edges if e.prerequisite == "sonicde/linuxonly"])
+        self.assertEqual(cl.skipped, {"sonicde/linuxonly": ["sonicde/app depends"]})
+        model = prj.to_model(cl)
+        self.assertEqual(model["platform"], "freebsd")
+        self.assertIn("sonicde/linuxonly", model["skipped"])
+
+    def test_linux_only_dependency_kept_on_linux(self):
+        sol = self._app_with_linux_only_dep()
+        _, cl = self._closure(sol, "linux")
+        self.assertIn("sonicde/linuxonly", cl.packages)
+        self.assertEqual(cl.skipped, {})
+
+    def test_skipped_build_entry_is_not_an_error(self):
+        self._write_pkg("sonicde/linuxonly", buildsystem="cmake", platforms=["linux"],
+                        **self._git("linuxonly"))
+        sol = self._write_solution(build=["sonicde/linuxonly"])
+        _, cl = self._closure(sol, "freebsd")
+        self.assertEqual(cl.packages, {})
+        self.assertEqual(cl.skipped, {"sonicde/linuxonly": ["<solution::build>"]})
+
+    def test_unknown_platform_value_rejected(self):
+        self._write_pkg("sonicde/odd", buildsystem="cmake", platforms=["hurd"],
+                        **self._git("odd"))
+        sol = self._write_solution(build=["sonicde/odd"])
+        with self.assertRaises(ConfigError):
+            Project(self.root, sol, platform="linux").load()
+
+    def test_unsupported_host_platform_rejected(self):
+        sol = self._write_solution()
+        with self.assertRaises(ConfigError):
+            Project(self.root, sol, platform="darwin")
+
+    def test_build_of_skipped_repository_exits_2(self):
+        import contextlib
+        import io
+        from config import main
+        sol = self._app_with_linux_only_dep()
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err), self.assertRaises(SystemExit) as cm:
+            main(["-root", str(self.root), "-solution", str(sol), "-platform", "freebsd",
+                  "-build", "linuxonly", "--closure-only"])
+        self.assertEqual(cm.exception.code, 2)
+        self.assertIn("sonicde/linuxonly is not built on freebsd", err.getvalue())
+
+
+class TestInstallDeps(unittest.TestCase):
+    """install-deps picks os-release ID, then the platform's generic key."""
+
+    MODEL = {"packages": {
+        "os-installed/a": {"type": "system", "platform_packages": {
+            "debian": "a-dev", "ghostbsd": "a-ghost", "freebsd": "a-fbsd"}},
+        "os-installed/b": {"type": "system", "platform_packages": {
+            "debian": "b-dev", "freebsd": "b-fbsd"}},
+        "os-installed/c": {"type": "system", "platform_packages": {"debian": "c-dev"}},
+        "os-installed/d": {"type": "system", "platform_packages": {
+            "debian": "d-dev", "freebsd": "base"}},
+        "sonicde/x": {"type": "", "platform_packages": {}},
+    }}
+
+    def test_freebsd_uses_os_id_then_freebsd_never_debian(self):
+        from install_deps import select_packages
+        names, missing = select_packages(dict(self.MODEL, platform="freebsd"), "ghostbsd")
+        self.assertEqual(names, ["a-ghost", "b-fbsd"])
+        self.assertEqual(missing, ["os-installed/c"])
+
+    def test_linux_falls_back_to_debian(self):
+        from install_deps import select_packages
+        names, missing = select_packages(dict(self.MODEL, platform="linux"), "gentoo")
+        self.assertEqual(names, ["a-dev", "b-dev", "c-dev", "d-dev"])
+        self.assertEqual(missing, [])
 
 
 if __name__ == "__main__":

@@ -6,3 +6,4 @@ platform-packages:
     debian: libaccounts-glib-dev
     devuan: libaccounts-glib-dev
     arch: libaccounts-glib
+    freebsd: libaccounts-glib

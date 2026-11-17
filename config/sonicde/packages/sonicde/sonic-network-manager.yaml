@@ -28,3 +28,28 @@ build-depends:
     - sonicde/sonic-frameworks-cmake-modules
     - os-installed/libssl
     - os-installed/qt6keychain
+
+depends:
+    - 3rdparty/qcoro6
+    - sys/libnm
+    - sonicde/sonic-frameworks-app-info
+    - sonicde/sonic-frameworks-autocomplete
+    - sonicde/sonic-frameworks-barcode
+    - sonicde/sonic-frameworks-color-scheme
+    - sonicde/sonic-frameworks-core-addons
+    - sonicde/sonic-frameworks-dbus
+    - sonicde/sonic-frameworks-device-integration
+    - sonicde/sonic-frameworks-internationalization
+    - sonicde/sonic-frameworks-io
+    - sonicde/sonic-frameworks-modemmanager
+    - sonicde/sonic-frameworks-networkmanager
+    - sonicde/sonic-frameworks-notifications
+    - sonicde/sonic-frameworks-progress-ui
+    - sonicde/sonic-frameworks-quick-charts
+    - sonicde/sonic-frameworks-quick-ui
+    - sonicde/sonic-frameworks-quick-ui-addons
+    - sonicde/sonic-frameworks-settings-utils
+    - sonicde/sonic-frameworks-svg
+    - sonicde/sonic-frameworks-widgets-addons
+    - sonicde/sonic-frameworks-windowsystem
+    - sonicde/sonic-interface-libraries

@@ -38,6 +38,7 @@ depends:
     - sonicde/sonic-night-light
     - sonicde/sonic-silver
     - sys/libdrm
+    - sys/linux-input-headers
 
 cmake-extra-args:
     - -DBUILD_TESTING=OFF

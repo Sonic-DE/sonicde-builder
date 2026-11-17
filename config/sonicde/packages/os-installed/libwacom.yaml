@@ -5,3 +5,4 @@ platform-packages:
     debian: libwacom-dev
     devuan: libwacom-dev
     arch: libwacom
+    freebsd: libwacom

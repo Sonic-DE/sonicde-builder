@@ -12,7 +12,8 @@ usage() {
 Usage: ./install [--model PATH]
 
 Installs the packages of the last completed `./build-all` to the system prefix
-it was built for (/usr unless built with --prefix). Nothing is configured or built.
+it was built for (/usr, or /usr/local on FreeBSD, unless built with --prefix). Nothing is
+configured or built.
 
   --model PATH   Model of the build to install (default state/model.json).
                  After `./build-repo REPOSITORY`, use state/build-model.json.

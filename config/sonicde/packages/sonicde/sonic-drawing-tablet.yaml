@@ -37,3 +37,4 @@ depends:
     - sonicde/sonic-frameworks-windowsystem
     - sonicde/sonic-frameworks-xml-gui
     - sonicde/sonic-interface-libraries
+    - sys/linux-input-headers

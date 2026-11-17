@@ -5,3 +5,4 @@ platform-packages:
     debian: python3-pygdbmi
     devuan: python3-pygdbmi
     arch: python-pygdbmi
+    freebsd: py312-pygdbmi

@@ -84,3 +84,19 @@ def test_system_validation_checks_pkg_config_and_python(monkeypatch):
                       ("header", "os-installed/python", ["boost/version.hpp"]),
                       ("cmake", "os-installed/python", ["Qt6Keychain"]),
                       ("cmake-any", "os-installed/python", ["OpenCV 5", "OpenCV 4.7"])]
+
+def test_freebsd_base_system_packages_are_not_probed(monkeypatch):
+    probed = []
+    monkeypatch.setattr("validate.validate_pkg_config", lambda name, modules: probed.append(name) or 0)
+    for helper in ("validate_python_modules", "validate_commands", "validate_headers",
+                   "validate_cmake_packages", "validate_cmake_package_alternatives"):
+        monkeypatch.setattr(f"validate.{helper}", lambda name, values: 0)
+    packages = {"os-installed/libpam": {"type": "system", "pkg_config": ["pam"],
+                                        "platform_packages": {"debian": "libpam-dev", "freebsd": "base"}},
+                "os-installed/icu": {"type": "system", "pkg_config": ["icu-uc"],
+                                     "platform_packages": {"freebsd": "icu"}}}
+    assert validate_system_packages({"platform": "freebsd", "packages": packages}) == 0
+    assert probed == ["os-installed/icu"]
+    probed.clear()
+    assert validate_system_packages({"platform": "linux", "packages": packages}) == 0
+    assert probed == ["os-installed/icu", "os-installed/libpam"]

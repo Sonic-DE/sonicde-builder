@@ -5,3 +5,4 @@ platform-packages:
     debian: zlib1g-dev
     devuan: zlib1g-dev
     arch: zlib
+    freebsd: base

@@ -1,5 +1,6 @@
 provides: sys/libnl-3.0
 type: system
+platforms: [linux]
 pkg-config: libnl-3.0
 
 platform-packages:

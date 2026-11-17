@@ -22,7 +22,7 @@ single packages between releases.
 | SonicDE release | Frameworks | System | Released |
 |---|---|---|---|
 | [Upcoming](#upcoming-release) | | | not yet released |
-| [6.8.2](#682-november-2026) | | 26.08.3 | November 2026 |
+| [6.8.2](#682-november-2026) | 6.31.0 (new packages only) | 26.08.3 | November 2026 |
 | [6.8.0](#680-october-2026) | 6.31.0 | 26.08.2 | October 2026 |
 | [6.7.5](#675-september-2026) | 6.30.0 | 26.08.0 | September 2026 |
 | [6.7.4](#674-august-2026) | 6.29.0 | 26.04.3.x | August 2026 |
@@ -43,14 +43,9 @@ first release.
 
 ### Packages added
 
-Build them in this order, before the packages that use them:
-
-1. **sonic-frameworks-logging** (`SonicLogging`, `Sonic::Logging`): needs Qt 6.11 Core.
-2. **sonic-frameworks-init-info** (`SonicInitInfo`, `Sonic::InitInfo`): needs Qt 6.11 Core and sonic-frameworks-logging; Qt 6.11 D-Bus is optional.
-3. **sonic-frameworks-ipc** (`SonicIpc`, `Sonic::Ipc`): needs Qt 6.11 Core and Network, and sonic-frameworks-logging.
-
-All three need Extra CMake Modules (sonic-frameworks-cmake-modules) and are licensed
-GPL-2.0-or-later.
+- **sonic-partition-manager-core** (System): SonicDE's fork of KPMcore, the partition and file system library
+  behind sonic-partition-manager. It needs sonic-frameworks-core-addons, sonic-frameworks-internationalization,
+  sonic-frameworks-widgets-addons, sonic-polkit and, on Linux, libblkid (util-linux).
 
 ### Dependency changes
 
@@ -76,8 +71,21 @@ GPL-2.0-or-later.
   Light - Mobile and Silver Dark - Mobile. The look-and-feel folder `org.kde.silver.mobile` is replaced by
   `org.sonicde.silver.mobile.light` and `org.sonicde.silver.mobile.dark`; update your package's file list.
   sonic-workspace moves users of the old theme over at login.
+- **sonic-terminal** (System) now uses Qt's private Gui API (`Qt6::GuiPrivate`), so rebuild it whenever Qt is
+  updated, even between minor releases (on Gentoo, depend on `dev-qt/qtbase:6=`).
+- **sonic-partition-manager** now builds against sonic-partition-manager-core instead of your distribution's
+  kpmcore; build sonic-partition-manager-core first and drop the kpmcore dependency.
+- **sonic-frameworks-cmake-modules** (Extra CMake Modules) supports only Qt 6: the `BUILD_WITH_QT6` option is gone and
+  any `QT_MAJOR_VERSION` other than 6 stops the configure. It no longer installs the Qt 5-only files
+  `KDEInstallDirs5.cmake`, `ECMQmlModule5.cmake`, `ECMQueryQmake.cmake`, `ECMCreateQmFromPoFiles.cmake`,
+  `FindQHelpGenerator.cmake`, `toolchain/ECMAndroidDeployQt5.cmake`, `toolchain/deployment-file.json.in` and
+  `toolchain/deployment-file-qt514.json.in`; drop them from your package's file list.
 
 ### Actions
+
+- **sonic-partition-manager-core installs the same files as kpmcore** (`libkpmcore`, the `KPMcore` CMake
+  package, the `kpmcore` plugins and the `org.kde.kpmcore` helper, D-Bus and polkit files). Mark it as
+  replacing and conflicting with your distribution's kpmcore.
 
 - **License change: sonic-frameworks-color-scheme, sonic-frameworks-quick-ui and
   sonic-frameworks-quick-desktop-style now contain GPL-2.0-or-later code** (the new tools-area files), so their
@@ -91,8 +99,19 @@ GPL-2.0-or-later.
 
 ## 6.8.2 (November 2026)
 
-System 26.08.3. Several Core and System packages now need the new Frameworks packages listed under
-[Upcoming release](#upcoming-release).
+System 26.08.3. Several Core and System packages now need the new Frameworks packages below.
+
+### Packages added
+
+Three new Frameworks packages, first released as 6.31.0. Build them in this order, before the packages that
+use them:
+
+1. **sonic-frameworks-logging** (`SonicLogging`, `Sonic::Logging`): needs Qt 6.11 Core.
+2. **sonic-frameworks-init-info** (`SonicInitInfo`, `Sonic::InitInfo`): needs Qt 6.11 Core and sonic-frameworks-logging; Qt 6.11 D-Bus is optional.
+3. **sonic-frameworks-ipc** (`SonicIpc`, `Sonic::Ipc`): needs Qt 6.11 Core and Network, and sonic-frameworks-logging.
+
+All three need Extra CMake Modules (sonic-frameworks-cmake-modules) and are licensed
+GPL-2.0-or-later.
 
 ### Dependency changes
 
@@ -478,16 +497,16 @@ yet ship in the upcoming release or aren't built on their own.
 | sonic-frameworks-icon-themes | 6.28.0.1 | 6.7.3 |
 | sonic-frameworks-idle-tracker | 6.28.0.1 | 6.7.3 |
 | sonic-frameworks-image-formats | 6.29.0 | 6.7.4 |
-| sonic-frameworks-init-info | — | Upcoming |
+| sonic-frameworks-init-info | 6.31.0 | 6.8.2 |
 | sonic-frameworks-internationalization | 6.29.0 | 6.7.4 |
 | sonic-frameworks-io | 6.24.0 | 6.6.3 |
 | sonic-frameworks-io-extras | 26.04.3 | 6.7.3 |
 | sonic-frameworks-io-fuse | 6.0.0 | 6.7.3 |
-| sonic-frameworks-ipc | — | Upcoming |
+| sonic-frameworks-ipc | 6.31.0 | 6.8.2 |
 | sonic-frameworks-keybind | 6.25.0 | 6.6.4 |
 | sonic-frameworks-keyring | 6.29.0 | 6.7.4 |
 | sonic-frameworks-keyring-pam | 6.7.3 | 6.7.3 |
-| sonic-frameworks-logging | — | Upcoming |
+| sonic-frameworks-logging | 6.31.0 | 6.8.2 |
 | sonic-frameworks-modemmanager | 6.29.0 | 6.7.4 |
 | sonic-frameworks-networkmanager | 6.29.0 | 6.7.4 |
 | sonic-frameworks-notification-settings | 6.29.0 | 6.7.4 |
@@ -540,6 +559,7 @@ yet ship in the upcoming release or aren't built on their own.
 | sonic-oxygen-icons | 6.29.0 | 6.7.4 |
 | sonic-oxygen-sounds | 6.7.3 | 6.7.3 |
 | sonic-partition-manager | 26.08.0 | 6.7.5 |
+| sonic-partition-manager-core | — | Upcoming |
 | sonic-pipewire | 6.7.3 | 6.7.3 |
 | sonic-plasma5-support-library | 6.7.3 | 6.7.3 (removed in 6.7.5; last tagged 6.8.0) |
 | sonic-polkit | 0.201.1 | 6.7.3 |

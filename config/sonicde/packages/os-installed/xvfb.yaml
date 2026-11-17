@@ -5,3 +5,4 @@ platform-packages:
     debian: xvfb
     devuan: xvfb
     arch: xorg-server-xvfb
+    freebsd: xlibre-vfb

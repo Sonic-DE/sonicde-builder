@@ -5,3 +5,4 @@ platform-packages:
     debian: libsdl3-dev
     devuan: libsdl3-dev
     arch: sdl3
+    freebsd: sdl3

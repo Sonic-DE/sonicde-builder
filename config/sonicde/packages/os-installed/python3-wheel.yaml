@@ -6,3 +6,4 @@ platform-packages:
     debian: python3-wheel
     devuan: python3-wheel
     arch: python-wheel
+    freebsd: py312-wheel

@@ -6,3 +6,4 @@ platform-packages:
     debian: shared-mime-info
     devuan: shared-mime-info
     arch: shared-mime-info
+    freebsd: shared-mime-info

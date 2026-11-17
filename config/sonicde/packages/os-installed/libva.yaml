@@ -5,3 +5,4 @@ pkg-config: libva
 platform-packages:
     debian: libva-dev
     devuan: libva-dev
+    freebsd: libva

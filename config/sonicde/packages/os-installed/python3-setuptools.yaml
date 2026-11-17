@@ -6,3 +6,4 @@ platform-packages:
     debian: python3-setuptools
     devuan: python3-setuptools
     arch: python-setuptools
+    freebsd: py312-setuptools

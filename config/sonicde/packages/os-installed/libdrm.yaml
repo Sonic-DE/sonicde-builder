@@ -5,3 +5,4 @@ pkg-config: libdrm
 platform-packages:
     debian: libdrm-dev
     devuan: libdrm-dev
+    freebsd: libdrm

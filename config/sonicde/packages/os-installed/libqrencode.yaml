@@ -1,0 +1,9 @@
+provides: sys/libqrencode
+type: system
+pkg-config: libqrencode
+
+platform-packages:
+    debian: libqrencode-dev
+    devuan: libqrencode-dev
+    arch: qrencode
+    freebsd: libqrencode

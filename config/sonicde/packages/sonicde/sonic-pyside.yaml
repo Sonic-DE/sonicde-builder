@@ -26,7 +26,8 @@ buildsystem: cmake
 
 cmake-extra-args:
     - -DDISABLE_PYI=ON
-    - -DClang_DIR=/usr/lib/llvm/21/lib64/cmake/clang
-    - -DLLVM_DIR=/usr/lib/llvm/21/lib64/cmake/llvm
+    - -DClang_DIR=${llvm_cmake_dir}/clang
+    - -DLLVM_DIR=${llvm_cmake_dir}/llvm
 
-# needs clang-19 installed (devuan)
+build-depends:
+    - sys/libclang

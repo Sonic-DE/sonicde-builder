@@ -5,3 +5,4 @@ platform-packages:
     debian: libhwy-dev
     devuan: libhwy-dev
     arch: highway
+    freebsd: highway

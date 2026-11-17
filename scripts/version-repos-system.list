@@ -5,5 +5,6 @@ sonic-ecco
 sonic-exiv2-library
 sonic-frameworks-io-extras
 sonic-partition-manager
+sonic-partition-manager-core
 sonic-system-log
 sonic-terminal

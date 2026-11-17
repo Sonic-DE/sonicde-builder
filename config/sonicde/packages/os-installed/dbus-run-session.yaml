@@ -5,3 +5,4 @@ platform-packages:
     debian: dbus-daemon
     devuan: dbus-daemon
     arch: dbus
+    freebsd: dbus

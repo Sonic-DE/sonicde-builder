@@ -1,5 +1,6 @@
 provides: sys/modemmanager
 type: system
+platforms: [linux]
 # pkg-config: libnm
 
 platform-packages:

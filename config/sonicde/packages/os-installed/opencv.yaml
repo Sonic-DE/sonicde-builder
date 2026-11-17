@@ -7,3 +7,4 @@ platform-packages:
     debian: libopencv-dev
     devuan: libopencv-dev
     arch: opencv
+    freebsd: opencv

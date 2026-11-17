@@ -5,3 +5,4 @@ platform-packages:
     debian: libxxf86vm-dev
     devuan: libxxf86vm-dev
     arch: libxxf86vm
+    freebsd: libXxf86vm

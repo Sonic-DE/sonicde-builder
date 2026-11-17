@@ -7,8 +7,13 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 INSTALL=false
-INSTALL_PREFIX=/usr
 CONFIG_ARGS=()
+if [ "$(uname -s)" = FreeBSD ]; then
+    INSTALL_PREFIX=/usr/local
+    CONFIG_ARGS+=(-solution-define llvm-cmake-dir=/usr/local/llvm21/lib/cmake)
+else
+    INSTALL_PREFIX=/usr
+fi
 BUILD_ARGS=()
 JOBS="${SONICDE_BUILD_JOBS:-}"
 # Kept apart from state/model.json and depgraph.dot, which describe the full
@@ -25,8 +30,8 @@ Builds REPOSITORY, the packages it depends on, and every package that depends
 on it (directly or transitively), so dependents are rebuilt against it.
 
   --install               Install that set to the system only after it all builds.
-  --prefix PATH           System prefix to build for (default /usr);
-                          --install-prefix is an alias.
+  --prefix PATH           System prefix to build for (default /usr, /usr/local on
+                          FreeBSD); --install-prefix is an alias.
   --parallel N, -j N      Maximum concurrent compiler jobs inside one package.
   --verbose, -v          Verbose build output.
   --clean-first          Clean before building.

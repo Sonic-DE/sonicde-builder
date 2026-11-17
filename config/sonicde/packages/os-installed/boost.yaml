@@ -6,3 +6,4 @@ platform-packages:
     debian: libboost-dev
     devuan: libboost-dev
     arch: boost
+    freebsd: boost-libs

@@ -1,5 +1,6 @@
 provides: sys/libmount
 type: system
+platforms: [linux]
 pkg-config: mount
 platform-packages:
     debian: libmount-dev

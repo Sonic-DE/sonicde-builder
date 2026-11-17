@@ -29,4 +29,5 @@ build-depends:
 
 depends:
     - sys/libdmtx
+    - sys/libqrencode
     - sys/libzxing

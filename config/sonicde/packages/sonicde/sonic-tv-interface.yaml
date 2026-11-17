@@ -69,6 +69,7 @@ depends:
     - sonicde/sonic-win
     - sonicde/sonic-workspace
     - sonicde/xdg-desktop-portal-sonicde
+    - sys/linux-input-headers
 
 cmake-extra-args:
     - -DBUILD_TESTING=ON

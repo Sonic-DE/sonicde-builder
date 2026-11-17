@@ -5,3 +5,4 @@ platform-packages:
     debian: libcups2-dev
     devuan: libcups2-dev
     arch: libcups
+    freebsd: cups

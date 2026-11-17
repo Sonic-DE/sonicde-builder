@@ -11,18 +11,5 @@ python3 scripts/config.py -root . \
     -out state/model.json \
     "$@"
 
-# Print platform packages for the current distro
-python3 -c "
-import json, platform, sys
-model = json.load(open('state/model.json'))
-distro = platform.freedesktop_os_release()['ID'] if hasattr(platform, 'freedesktop_os_release') else 'debian'
-pkgs = []
-for name, pkg in sorted(model['packages'].items()):
-    if pkg.get('type') != 'system': continue
-    pp = pkg.get('platform_packages', {})
-    if isinstance(pp, dict):
-        p = pp.get(distro) or pp.get('debian')
-        if p: pkgs.append(p)
-if pkgs:
-    print(' '.join(sorted(set(pkgs))))
-"
+# Print platform packages for the current distro (FreeBSD: os-release ID, then freebsd)
+python3 scripts/install_deps.py state/model.json

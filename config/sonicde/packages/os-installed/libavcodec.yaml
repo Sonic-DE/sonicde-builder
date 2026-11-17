@@ -5,3 +5,4 @@ pkg-config: libavcodec
 platform-packages:
     debian: libavcodec-dev
     devuan: libavcodec-dev
+    freebsd: ffmpeg

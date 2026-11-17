@@ -5,3 +5,4 @@ pkg-config: libcanberra
 platform-packages:
     debian: libcanberra-dev
     devuan: libcanberra-dev
+    freebsd: libcanberra

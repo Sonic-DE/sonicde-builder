@@ -5,3 +5,4 @@ platform-packages:
     debian: libkdsoapwsdiscoveryclient-qt6-dev
     devuan: libkdsoapwsdiscoveryclient-qt6-dev
     arch: kdsoap-ws-discovery-client
+    freebsd: kdsoap-ws-discovery-client

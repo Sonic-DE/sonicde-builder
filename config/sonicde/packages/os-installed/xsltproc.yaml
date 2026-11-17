@@ -5,3 +5,4 @@ platform-packages:
     debian: xsltproc
     devuan: xsltproc
     arch: libxslt
+    freebsd: libxslt

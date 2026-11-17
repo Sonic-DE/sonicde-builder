@@ -5,3 +5,4 @@ platform-packages:
     debian: libicu-dev
     devuan: libicu-dev
     arch: icu
+    freebsd: icu

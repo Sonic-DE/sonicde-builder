@@ -5,3 +5,4 @@ platform-packages:
     debian: libx11-xcb-dev
     devuan: libx11-xcb-dev
     arch: libx11
+    freebsd: libX11

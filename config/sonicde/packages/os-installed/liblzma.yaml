@@ -5,3 +5,4 @@ pkg-config: liblzma
 platform-packages:
     debian: liblzma-dev
     devuan: liblzma-dev
+    freebsd: base

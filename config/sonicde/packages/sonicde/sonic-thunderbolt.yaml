@@ -24,6 +24,9 @@ master_branch: master
 
 buildsystem: cmake
 
+# FreeBSD has no Thunderbolt driver.
+platforms: [linux]
+
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
 

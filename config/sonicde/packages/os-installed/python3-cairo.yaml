@@ -6,3 +6,4 @@ platform-packages:
     debian: python3-cairo
     devuan: python3-cairo
     arch: python-cairo
+    freebsd: py312-pycairo

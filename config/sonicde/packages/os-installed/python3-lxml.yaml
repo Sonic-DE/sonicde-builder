@@ -6,3 +6,4 @@ platform-packages:
     debian: python3-lxml
     devuan: python3-lxml
     arch: python-lxml
+    freebsd: py312-lxml
