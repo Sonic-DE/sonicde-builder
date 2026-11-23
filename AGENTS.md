@@ -239,8 +239,10 @@ reporting the task complete.**
   says what is better for the person using SonicDE, not how the code changed.
   Avoid class names, file paths, commit hashes and jargon.
 - Give each change its own bullet. Changes users can't see (build tooling,
-  code cleanups, tests) get one short "Behind the scenes" bullet per release
+  code cleanups) get one short "Behind the scenes" bullet per release
   instead of one each.
+- Never mention changes to tests (unit tests, autotests, test data or test
+  build files), not even under "Behind the scenes".
 - Never mention version bumps ("Release X.Y.Z" commits) or commits that only
   add or edit `RELEASE-NOTES.md`, not even under "Behind the scenes". A release
   whose only commits are those gets the "No SonicDE-specific changes" line.
