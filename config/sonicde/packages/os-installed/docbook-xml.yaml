@@ -1,8 +1,14 @@
-provides: sys/docbook-xsl
+provides: sys/docbook-xml
 type: system
-# pkg-config: docbook-xsl
+# The DTD sonic-frameworks-doctools' FindDocBookXML4 looks for (4.5), in the places it looks.
+files-any:
+    - share/xml/docbook/schema/dtd/4.5/docbookx.dtd
+    - share/xml/docbook/xml-dtd-4.5/docbookx.dtd
+    - share/sgml/docbook/xml-dtd-4.5/docbookx.dtd
+    - share/xml/docbook/4.5/docbookx.dtd
+    - share/sgml/docbook/xml-dtd-4.5-*/docbookx.dtd
 
 platform-packages:
-    debian: docbook-xsl
-    devuan: docbook-xsl
-    freebsd: docbook-xsl
+    debian: docbook-xml
+    devuan: docbook-xml
+    freebsd: docbook-xml

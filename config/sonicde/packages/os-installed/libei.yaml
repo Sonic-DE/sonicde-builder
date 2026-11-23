@@ -1,0 +1,8 @@
+provides: sys/libei
+type: system
+pkg-config: libei-1.0
+platform-packages:
+    debian: libei-dev
+    devuan: libei-dev
+    arch: libei
+    freebsd: libei

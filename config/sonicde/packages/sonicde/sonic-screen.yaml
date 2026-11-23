@@ -32,6 +32,7 @@ build-depends:
     - sonicde/sonic-frameworks-crash-handler
     - sonicde/sonic-frameworks-data-models
     - sonicde/sonic-frameworks-dbus
+    - sonicde/sonic-frameworks-image-formats
     - sonicde/sonic-frameworks-internationalization
     - sonicde/sonic-frameworks-settings
     - sonicde/sonic-frameworks-settings-utils

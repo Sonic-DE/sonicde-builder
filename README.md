@@ -214,6 +214,9 @@ Select a different final destination with:
 
     ./build-all --prefix /opt/sonicde --parallel 8
 
+The default destination is `/usr`, and `/usr/local` on FreeBSD, where the
+build also uses the system's LLVM 21 (`/usr/local/llvm21`).
+
 Packages are always configured for the final destination, while every
 installation during the build is redirected with `DESTDIR` under
 `state/install-stage/`. Later packages discover these staged dependencies, and
@@ -273,6 +276,7 @@ superbuild using `ExternalProject_Add`.
     scripts/fetch.py         fetch Git repositories from manifest metadata
     scripts/validate.py      validate system dependencies and Qt6 Core
     scripts/generate.py      generate CMake ExternalProject superbuild
+    scripts/check_staged_packages.py  after the build: SonicDE's CMake packages came from the stage
     scripts/install.py       deploy completed CMake packages after the full build
     scripts/git-autopick     upstream sync (rebase tracker range onto master)
 
@@ -285,8 +289,22 @@ build list, install prefix, environment, and fetch refspecs. Package
 manifests under `config/sonicde/packages/` define Git sources, dependencies, and
 build systems.
 
-Only CMake and no-build packages are supported. System packages are
-validated via `pkg-config`. Qt6 is supplied by the operating system
+A manifest's `platforms` list (`linux`, `freebsd`) names the systems the
+package is built on; without it, it's built everywhere. On other systems the
+package is left out, along with the dependency edges that need it.
+`platform-packages` gives the package name per distribution (`freebsd` for
+FreeBSD and GhostBSD), which `./install-deps` prints. `scripts/config.py
+-platform freebsd` resolves the build for another system than the one it
+runs on.
+
+Only CMake and no-build packages are supported. Before anything is
+compiled, every system package is checked through what its manifest lists:
+`pkg-config`, `commands`, `headers`, `cmake-packages`, `cmake-packages-any`,
+`files-any` (any of these paths, relative ones under `/usr` and `/usr/local`)
+or `python-modules`. A system manifest that lists none of them fails. After
+the build, a package that found a CMake package SonicDE builds anywhere but
+the stage (a distribution's KDE Frameworks, say) fails the build before
+anything is installed: its manifest is missing that dependency. Qt6 is supplied by the operating system
 and is deliberately not fetched or built.
 
 tests:

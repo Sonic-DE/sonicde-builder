@@ -1,0 +1,9 @@
+provides: sys/poppler-qt6
+type: system
+pkg-config: poppler-qt6
+
+platform-packages:
+    debian: libpoppler-qt6-dev
+    devuan: libpoppler-qt6-dev
+    arch: poppler-qt6
+    freebsd: poppler-qt6

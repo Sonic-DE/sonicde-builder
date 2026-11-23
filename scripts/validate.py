@@ -5,6 +5,7 @@ Validate active system dependencies and Qt6 Core for the SonicDE builder.
 """
 from __future__ import annotations
 
+import glob
 import json
 import os
 import shutil
@@ -108,6 +109,28 @@ def validate_cmake_package_alternatives(pkg_name: str, packages: list[str]) -> i
     print(f"[{pkg_name}] missing all CMake package alternatives: {' OR '.join(packages)}", file=sys.stderr)
     return 1
 
+FILE_ROOTS = [Path("/usr"), Path("/usr/local")]
+
+
+def validate_files_any(pkg_name: str, patterns: list[str]) -> int:
+    """Pass when any glob matches: absolute as given, relative under /usr and /usr/local."""
+    if not patterns:
+        return 0
+    for pattern in patterns:
+        if pattern.startswith("/"):
+            matches = sorted(glob.glob(pattern))
+        else:
+            matches = sorted(m for root in FILE_ROOTS for m in glob.glob(str(root / pattern)))
+        if matches:
+            print(f"[{pkg_name}] file: {matches[0]}")
+            return 0
+    print(f"[{pkg_name}] missing all files: {' OR '.join(patterns)}", file=sys.stderr)
+    return 1
+
+
+CHECK_FIELDS = ("pkg_config", "python_modules", "commands", "headers", "cmake_packages", "cmake_packages_any", "files_any")
+
+
 def validate_system_packages(model: dict) -> int:
     """Validate all active system packages."""
     errors = 0
@@ -117,6 +140,12 @@ def validate_system_packages(model: dict) -> int:
         if model.get("platform") == "freebsd" and \
                 (pkg.get("platform_packages") or {}).get("freebsd") == BASE_SYSTEM:
             print(f"[{name}] part of the FreeBSD base system")
+            continue
+        # A manifest that lists nothing to check would pass whether or not the package is there.
+        if not any(pkg.get(field) for field in CHECK_FIELDS):
+            print(f"[{name}] has nothing to check: give its manifest pkg-config, commands, headers, "
+                  "cmake-packages, cmake-packages-any, files-any or python-modules", file=sys.stderr)
+            errors += 1
             continue
         modules = pkg.get("pkg_config") or []
         if isinstance(modules, str):
@@ -142,6 +171,10 @@ def validate_system_packages(model: dict) -> int:
         if isinstance(cmake_packages_any, str):
             cmake_packages_any = [cmake_packages_any]
         errors += validate_cmake_package_alternatives(name, cmake_packages_any)
+        files_any = pkg.get("files_any") or []
+        if isinstance(files_any, str):
+            files_any = [files_any]
+        errors += validate_files_any(name, files_any)
     return errors
 
 

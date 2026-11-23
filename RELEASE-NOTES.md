@@ -49,6 +49,29 @@ first release.
 
 ### Dependency changes
 
+- **FreeBSD (and GhostBSD) is a supported platform.** SonicDE builds there for `/usr/local`, with the system's
+  Qt 6 and LLVM 21 (`/usr/local/llvm21`). `./install-deps` prints the FreeBSD package names from each
+  manifest's `platform-packages`. These are left out on FreeBSD, with everything that needs only them:
+  sonic-thunderbolt, sonic-frameworks-modemmanager, sonic-frameworks-bluetooth and sonic-bluetooth-runtime, and
+  the system libraries ModemManager, libnl, libsensors, libblkid and libmount. sonic-network-manager and
+  sonic-mobile-interface build without mobile broadband there. FreeBSD only: `dnsmasq` for
+  sonic-network-manager's hotspots, and `unix-selfauth-helper` for unlocking the screen; sonic-screenlocker
+  installs the `kde` PAM service (`etc/pam.d/kde`) that uses it. At runtime on FreeBSD, sonic-workspace's
+  image wallpapers need `qt6-imageformats` for WebP and TIFF pictures, and sonic-mobile-interface's screen
+  recorder needs `gstreamer1-plugins-vpx`, since FreeBSD's Qt uses GStreamer for video encoding.
+- **sonic-ecco is built without baloo-widgets** (`-DCMAKE_DISABLE_FIND_PACKAGE_KF6BalooWidgets=ON`) until SonicDE
+  has its own fork, so it never picks up your distribution's KDE copy. Build it the same way; Ecco's file search
+  and tagging integration is left out meanwhile.
+- **System libraries the builder now declares**, which these packages already used: LMDB for
+  sonic-frameworks-file-search, tesseract for sonic-screenies, libqalculate for sonic-workspace, and poppler-qt6
+  for sonic-frameworks-file-metadata (PDF metadata, left out without it). New manifests `os-installed/lmdb`,
+  `os-installed/tesseract`, `os-installed/libqalculate` and `os-installed/poppler-qt6`; check that your packages
+  depend on them.
+- **sonic-frameworks-io-extras**: the builder now declares the SonicDE packages it already used, among them
+  sonic-frameworks-zeroconf (`KF6DNSSD`) for the SMB worker, sonic-activities and sonic-activities-stats. Make
+  your package depend on SonicDE's versions of these, not your distribution's KDE Frameworks. Likewise
+  sonic-screen uses sonic-frameworks-image-formats, sonic-system-monitor sonic-frameworks-quick-charts, and
+  sonic-workspace-addons sonic-frameworks-unit-conversion.
 - **sonic-frameworks-doctools** now requires sonic-frameworks-logging; build it first. It installs a new
   program, `docbook2markdown6`, which turns QDoc's DocBook output for SonicDE's libraries into Markdown pages
   for the API reference on sonicde.org; add it to your package's file list. It needs no new dependencies. Its `kf.doctools.core` logging category is
@@ -80,12 +103,48 @@ first release.
   `KDEInstallDirs5.cmake`, `ECMQmlModule5.cmake`, `ECMQueryQmake.cmake`, `ECMCreateQmFromPoFiles.cmake`,
   `FindQHelpGenerator.cmake`, `toolchain/ECMAndroidDeployQt5.cmake`, `toolchain/deployment-file.json.in` and
   `toolchain/deployment-file-qt514.json.in`; drop them from your package's file list.
+- **xdg-desktop-portal-sonicde** has needed these since 6.7.3.1, and the builder now declares them: libei and
+  libeis (`libei-1.0`, `libeis-1.0`), PipeWire, xkbcommon and xkbcommon-x11, and the xcb modules xcb,
+  xcb-composite, xcb-damage, xcb-xfixes, xcb-randr, xcb-shm, xcb-xtest, xcb-xinput, xcb-render, xcb-ewmh,
+  xcb-image and xcb-renderutil. Check that your package depends on all of them (FreeBSD: `libei`, `libxcb`,
+  `libxkbcommon`, `pipewire`, `xcb-util-wm`, `xcb-util-image`, `xcb-util-renderutil`).
+- **sonic-network-manager**: the builder now declares what it already used: OpenConnect (its OpenConnect VPN
+  plugin, with Qt WebEngine Widgets, is only built when OpenConnect is found), the mobile broadband provider
+  database (`mobile-broadband-provider-info`, read by the mobile connection wizard), and GLib's gio and gmodule.
+  Make sure your package depends on them so the VPN plugin and wizard are complete.
+  It also needs Sonic Logging (sonic-frameworks-logging) now, and `dbus-daemon` to run its tests.
+  On FreeBSD its network daemon needs polkit (`polkit`) running at runtime: without it only root can
+  change network connections. Hotspots there need `dnsmasq` (new `os-installed/dnsmasq`, FreeBSD
+  only) and share the connection through pf, in the anchor `sonic-network/*` (a system that runs
+  pf with its own `/etc/pf.conf` needs `nat-anchor "sonic-network/*"` in it), or through
+  sonic-firewall's ipfw rules when those are on.
 
 ### Actions
 
+- **On FreeBSD, SonicDE's Frameworks install the same files as FreeBSD's `kf6-*` packages** (the same library
+  names under `/usr/local`, such as `libKF6Archive.so.6`). Mark each SonicDE Frameworks package as conflicting
+  with the `kf6-*` package it replaces.
 - **sonic-partition-manager-core installs the same files as kpmcore** (`libkpmcore`, the `KPMcore` CMake
   package, the `kpmcore` plugins and the `org.kde.kpmcore` helper, D-Bus and polkit files). Mark it as
   replacing and conflicting with your distribution's kpmcore.
+- **sonic-network-manager on FreeBSD installs a network service** that takes NetworkManager's place on the
+  system bus: `sonic-network-daemon` in the libexec directory, the rc.d script `sonic_network_daemon` in
+  `${sysconfdir}/rc.d`, `org.freedesktop.NetworkManager.conf` in `share/dbus-1/system.d`,
+  `org.freedesktop.NetworkManager.policy` in `share/polkit-1/actions`, and `libsonic-libnm.so` (the libnm
+  functions it uses, which networkmanager-shim only stubs). Add them to your package's file list, add
+  LGPL-2.1-or-later to its license field for the library, and enable the service on install
+  (`sysrc sonic_network_daemon_enable=YES`). None of these are installed on Linux.
+- **sonic-firewall on FreeBSD installs the rc.d script `sonic_firewall_service`** in `${sysconfdir}/rc.d` and the
+  firewall backends `ipfwbackend.so` and `pfbackend.so` in `kf6/plasma_firewall`; add them to your package's file
+  list and enable the service on install (`sysrc sonic_firewall_service_enable=YES`). Its polkit policy
+  (`org.sonicde.firewall.servicehelper.policy`, all platforms) gains two actions for changing rules and reading
+  logs. At runtime it writes `${sysconfdir}/sonic-firewall/`; leave that directory out of the package.
+- **Restart sonic-firewall-service after upgrading sonic-firewall** (all platforms): its protocol is now version 2,
+  and the settings page doesn't use a service still running the old version.
+- **On FreeBSD and GhostBSD the system tray needs a dynamic linker with FreeBSD commit `fa848d4d0c03`**
+  ("rtld: more caution when parsing in digest_notes()"). Without it, the linker in 15.0 and 15.1 can crash
+  while loading the camera indicator applet, and the desktop shell freezes; the tray then can't be added.
+  It's in stable/15 (and so 15.2). On 15.1, ship or require a base system (`/libexec/ld-elf.so.1`) with it.
 
 - **License change: sonic-frameworks-color-scheme, sonic-frameworks-quick-ui and
   sonic-frameworks-quick-desktop-style now contain GPL-2.0-or-later code** (the new tools-area files), so their

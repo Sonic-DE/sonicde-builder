@@ -64,7 +64,8 @@ def test_selected_model_is_built_and_installed_after_build(wrapper):
     assert generate[generate.index("--jobs") + 1] == "3"
     assert generate[generate.index("--dot-out") + 1] == "state/build-depgraph.dot"
     assert "--staging-root" in generate
-    assert calls[-3] == ["cmake", "--build", "build", "--parallel", "1"]
+    assert calls[-4] == ["cmake", "--build", "build", "--parallel", "1"]
+    assert calls[-3][:4] == ["python3", "scripts/check_staged_packages.py", "-model", MODEL]
     assert calls[-2] == ["sudo", "-v"]
     assert calls[-1][:3] == ["sudo", "--", "python3"]
     assert calls[-1][3].endswith("/scripts/install.py")
@@ -76,7 +77,8 @@ def test_full_solution_model_is_never_written(wrapper):
     assert result.returncode == 0, result.stderr
     assert not any("state/model.json" in arg for call in calls for arg in call)
     assert not any(call[0] == "sudo" for call in calls)
-    assert calls[-1] == ["cmake", "--build", "build", "--parallel", "1", "--verbose"]
+    assert calls[-2] == ["cmake", "--build", "build", "--parallel", "1", "--verbose"]
+    assert calls[-1][:2] == ["python3", "scripts/check_staged_packages.py"]
 
 def test_default_builds_staged_for_usr_and_prefix_overrides(wrapper):
     result, calls = wrapper("sonic-firewall")

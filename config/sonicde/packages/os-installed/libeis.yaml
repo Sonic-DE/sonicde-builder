@@ -1,0 +1,8 @@
+provides: sys/libeis
+type: system
+pkg-config: libeis-1.0
+platform-packages:
+    debian: libeis-dev
+    devuan: libeis-dev
+    arch: libei
+    freebsd: libei

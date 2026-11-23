@@ -3,6 +3,7 @@ type: system
 cmake-packages:
     - Qt6WebEngineCore
     - Qt6WebEngineQuick
+    - Qt6WebEngineWidgets
 platform-packages:
     debian: qt6-webengine-dev
     devuan: qt6-webengine-dev

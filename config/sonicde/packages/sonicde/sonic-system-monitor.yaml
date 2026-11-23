@@ -39,6 +39,7 @@ depends:
     - sonicde/sonic-frameworks-open-collab
     - sonicde/sonic-frameworks-package
     - sonicde/sonic-frameworks-qml-bridge
+    - sonicde/sonic-frameworks-quick-charts
     - sonicde/sonic-frameworks-quick-ui
     - sonicde/sonic-frameworks-quick-ui-addons
     - sonicde/sonic-frameworks-settings

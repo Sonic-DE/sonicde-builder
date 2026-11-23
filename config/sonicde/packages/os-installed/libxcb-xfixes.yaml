@@ -1,0 +1,8 @@
+provides: sys/libxcb-xfixes
+type: system
+pkg-config: xcb-xfixes
+platform-packages:
+    debian: libxcb-xfixes0-dev
+    devuan: libxcb-xfixes0-dev
+    arch: libxcb
+    freebsd: libxcb

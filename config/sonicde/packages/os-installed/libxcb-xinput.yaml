@@ -1,0 +1,8 @@
+provides: sys/libxcb-xinput
+type: system
+pkg-config: xcb-xinput
+platform-packages:
+    debian: libxcb-xinput-dev
+    devuan: libxcb-xinput-dev
+    arch: libxcb
+    freebsd: libxcb

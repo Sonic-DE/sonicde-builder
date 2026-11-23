@@ -27,7 +27,8 @@ import yaml
 
 PACKAGE_FIELDS = {
     "sources", "buildsystem", "build-depends", "depends", "provides",
-    "type", "pkg-config", "python-modules", "commands", "headers", "cmake-packages", "cmake-packages-any", "platform-packages", "cmake-extra-args",
+    "type", "pkg-config", "python-modules", "commands", "headers", "cmake-packages", "cmake-packages-any", "files-any",
+    "platform-packages", "cmake-extra-args",
     "master_branch", "ref", "name", "@filename", "@basename", "@slug",
     "@PROJECT", "@SOLUTION", "source-dir", "install-prefix", "parallel",
     "@statdir", "@builddir", "@destdir", "@binary-tarball", "@binary-image",
@@ -188,6 +189,7 @@ class Package:
     headers: list[str] = field(default_factory=list)
     cmake_packages: list[str] = field(default_factory=list)
     cmake_packages_any: list[str] = field(default_factory=list)
+    files_any: list[str] = field(default_factory=list)
     platform_packages: dict[str, str] = field(default_factory=dict)
     platforms: list[str] = field(default_factory=list)
     cmake_extra_args: list[str] = field(default_factory=list)
@@ -399,6 +401,9 @@ class Project:
         cmake_packages_any = r.get("cmake-packages-any") or []
         if isinstance(cmake_packages_any, str): cmake_packages_any = [cmake_packages_any]
         pkg.cmake_packages_any = list(cmake_packages_any)
+        files_any = r.get("files-any") or []
+        if isinstance(files_any, str): files_any = [files_any]
+        pkg.files_any = list(files_any)
         pp = r.get("platform-packages") or {}
         if isinstance(pp, dict):
             pkg.platform_packages = {str(k): str(v) for k, v in pp.items()}
@@ -674,6 +679,7 @@ class Project:
                 "headers": pkg.headers,
                 "cmake_packages": pkg.cmake_packages,
                 "cmake_packages_any": pkg.cmake_packages_any,
+                "files_any": pkg.files_any,
                 "platform_packages": pkg.platform_packages,
                 "cmake_extra_args": pkg.cmake_extra_args,
                 "reasons": cl.reasons.get(ident, []),

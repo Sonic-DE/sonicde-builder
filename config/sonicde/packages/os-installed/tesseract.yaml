@@ -1,0 +1,9 @@
+provides: sys/tesseract
+type: system
+pkg-config: tesseract
+
+platform-packages:
+    debian: libtesseract-dev
+    devuan: libtesseract-dev
+    arch: tesseract
+    freebsd: tesseract

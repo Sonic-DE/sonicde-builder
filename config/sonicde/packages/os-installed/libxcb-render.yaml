@@ -1,0 +1,8 @@
+provides: sys/libxcb-render
+type: system
+pkg-config: xcb-render
+platform-packages:
+    debian: libxcb-render0-dev
+    devuan: libxcb-render0-dev
+    arch: libxcb
+    freebsd: libxcb

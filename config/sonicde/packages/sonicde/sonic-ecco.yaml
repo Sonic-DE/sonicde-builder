@@ -24,6 +24,10 @@ master_branch: master
 
 buildsystem: cmake
 
+# No SonicDE baloo-widgets yet (Joe will fork it): never take a distribution's KDE copy meanwhile.
+cmake-extra-args:
+    - -DCMAKE_DISABLE_FIND_PACKAGE_KF6BalooWidgets=ON
+
 build-depends:
     - sonicde/sonic-frameworks-cmake-modules
 

@@ -1,0 +1,8 @@
+provides: sys/libxcb-randr
+type: system
+pkg-config: xcb-randr
+platform-packages:
+    debian: libxcb-randr0-dev
+    devuan: libxcb-randr0-dev
+    arch: libxcb
+    freebsd: libxcb

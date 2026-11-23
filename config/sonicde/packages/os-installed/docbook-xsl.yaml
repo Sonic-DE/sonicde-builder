@@ -1,8 +1,17 @@
-provides: sys/docbook-xml
+provides: sys/docbook-xsl
 type: system
-# pkg-config: docbook-xml
+# The stylesheets sonic-frameworks-doctools' FindDocBookXSL looks for, in the places it looks.
+files-any:
+    - share/xml/docbook/stylesheet/docbook-xsl/lib/lib.xsl
+    - share/xml/docbook/xsl-stylesheets/lib/lib.xsl
+    - share/sgml/docbook/xsl-stylesheets/lib/lib.xsl
+    - share/xml/docbook/stylesheet/nwalsh/current/lib/lib.xsl
+    - share/xml/docbook/stylesheet/nwalsh/lib/lib.xsl
+    - share/xsl/docbook/lib/lib.xsl
+    - share/xsl/docbook-xsl/lib/lib.xsl
+    - share/xml/docbook/xsl-stylesheets-*/VERSION
 
 platform-packages:
-    debian: docbook-xml
-    devuan: docbook-xml
-    freebsd: docbook-xml
+    debian: docbook-xsl
+    devuan: docbook-xsl
+    freebsd: docbook-xsl

@@ -1,6 +1,8 @@
 provides: sys/libsensors
 type: system
 platforms: [linux]
+# lm-sensors installs no pkg-config file.
+headers: sensors/sensors.h
 
 platform-packages:
     debian: libsensors-dev

@@ -7,7 +7,7 @@ sources:
             - refs/heads/${ref}:refs/heads/${ref}
 
 # Each QXLibre branch targets one Qt minor, and must match the operating system's Qt.
-ref: main
+ref: release/6.11
 
 buildsystem: cmake
 

@@ -1,0 +1,8 @@
+provides: sys/unix-selfauth-helper
+type: system
+# Lets the screen locker check the user's own password; FreeBSD's pam_unix only does that as root.
+platforms: [freebsd]
+files-any:
+    - libexec/unix-selfauth-helper
+platform-packages:
+    freebsd: unix-selfauth-helper

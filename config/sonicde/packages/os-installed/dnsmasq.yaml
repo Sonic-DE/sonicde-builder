@@ -1,0 +1,7 @@
+provides: sys/dnsmasq
+type: system
+# The FreeBSD network daemon's hotspots; NetworkManager brings its own on Linux.
+platforms: [freebsd]
+commands: dnsmasq
+platform-packages:
+    freebsd: dnsmasq

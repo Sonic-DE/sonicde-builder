@@ -43,7 +43,8 @@ sonicde-builder-wip/
 │   ├── config.py                      # parse YAML, resolve closure, emit model.json
 │   ├── repositories.py                # generate repository views and repo-list
 │   ├── fetch.py                       # fetch Git repositories from manifest metadata
-│   ├── validate.py                    # validate system deps (pkg-config) and Qt6 Core
+│   ├── validate.py                    # validate system deps (each manifest's checks) and Qt6 Core
+│   ├── check_staged_packages.py       # after the build: SonicDE's packages came from the stage
 │   ├── generate.py                    # generate CMake ExternalProject superbuild + DOT
 │   ├── sync_tags.py                   # mirror upstream tags onto SonicDE commits
 │   ├── api_docs.py                    # API reference from every build's ecm_generate_qdoc() modules
@@ -338,9 +339,11 @@ module invoked by the root command scripts:
    interpolate `${...}` variables, resolve the active dependency closure
    (exact names then unique `provides`), detect cycles, and write
    `state/model.json` atomically.
-2. **Validate** (`scripts/validate.py`): Run `pkg-config --modversion`
-   for every active system package and configure a real C++ CMake probe
-   for `find_package(Qt6 REQUIRED COMPONENTS Core)`.
+2. **Validate** (`scripts/validate.py`): Run every check a system
+   package's manifest lists (`pkg-config`, `commands`, `headers`,
+   `cmake-packages`, `cmake-packages-any`, `files-any`, `python-modules`),
+   fail a system package that lists none, and configure a real C++ CMake
+   probe for `find_package(Qt6 REQUIRED COMPONENTS Core)`.
 3. **Fetch** (`scripts/fetch.py`): Clone or update Git repositories from
    manifest metadata. Existing checkouts are updated without mutating
    HEAD, branch, index, or untracked files.
@@ -349,6 +352,11 @@ module invoked by the root command scripts:
    resolved closure.
 5. **Build** (`build-all`): Configure the parent CMake project and build
    the requested targets.
+6. **Check staged packages** (`scripts/check_staged_packages.py`): fail
+   when a package's CMake cache found a package that a SonicDE package
+   installs (known from install manifests and `<Name>Config.cmake.in`
+   templates) outside `state/install-stage`. The fix is the missing
+   dependency in its manifest, then removing that package's build directory.
 
 ## Autopick
 
@@ -441,6 +449,12 @@ Rules:
 - Qt6 is supplied by the operating system and is deliberately not fetched
   or built. Active `qt6/*` source dependencies are rejected.
 - Binary-package images and tarballs are not implemented.
+- Linux and FreeBSD are supported (`platform.system()`). A manifest's
+  `platforms` list limits a package to those systems; elsewhere it is left out
+  with the edges that need it, and nothing else is skipped. Package names per
+  system go in `platform-packages` (`freebsd:` for FreeBSD and GhostBSD).
+  FreeBSD builds for `/usr/local`; `scripts/config.py -platform` resolves for
+  another system.
 - The `repo-list` file is a generated compatibility artifact, not
   authoritative. Repository views derive from the normalized model.
 - Root command names:

@@ -28,10 +28,19 @@ build-depends:
     - sonicde/sonic-frameworks-cmake-modules
     - os-installed/libssl
     - os-installed/qt6keychain
+    # The network daemon's autotests run it on a private bus.
+    - os-installed/dbus-daemon
 
 depends:
     - 3rdparty/qcoro6
+    # The FreeBSD network daemon's hotspots hand out addresses with it.
+    - sys/dnsmasq
+    - sys/gio-2.0
+    - sys/gmodule-2.0
     - sys/libnm
+    - sys/mobile-broadband-provider-info
+    - sys/openconnect
+    - sys/qt6-webengine
     - sonicde/sonic-frameworks-app-info
     - sonicde/sonic-frameworks-autocomplete
     - sonicde/sonic-frameworks-barcode
@@ -41,6 +50,7 @@ depends:
     - sonicde/sonic-frameworks-device-integration
     - sonicde/sonic-frameworks-internationalization
     - sonicde/sonic-frameworks-io
+    - sonicde/sonic-frameworks-logging
     - sonicde/sonic-frameworks-modemmanager
     - sonicde/sonic-frameworks-networkmanager
     - sonicde/sonic-frameworks-notifications

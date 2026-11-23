@@ -30,6 +30,7 @@ build-depends:
 
 depends:
     - sys/libpam
+    - sys/unix-selfauth-helper
     - sonicde/sonic-frameworks-core-addons
     - sonicde/sonic-frameworks-color-scheme
     - sonicde/sonic-frameworks-crash-handler

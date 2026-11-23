@@ -1,0 +1,8 @@
+provides: sys/libxcb-xtest
+type: system
+pkg-config: xcb-xtest
+platform-packages:
+    debian: libxcb-xtest0-dev
+    devuan: libxcb-xtest0-dev
+    arch: libxcb
+    freebsd: libxcb

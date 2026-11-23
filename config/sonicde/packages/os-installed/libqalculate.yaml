@@ -1,0 +1,9 @@
+provides: sys/libqalculate
+type: system
+pkg-config: libqalculate
+
+platform-packages:
+    debian: libqalculate-dev
+    devuan: libqalculate-dev
+    arch: libqalculate
+    freebsd: libqalculate

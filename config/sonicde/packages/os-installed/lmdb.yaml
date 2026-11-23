@@ -1,0 +1,10 @@
+provides: sys/lmdb
+type: system
+# As sonic-frameworks-file-search's FindLMDB looks for it.
+headers: lmdb.h
+
+platform-packages:
+    debian: liblmdb-dev
+    devuan: liblmdb-dev
+    arch: lmdb
+    freebsd: lmdb

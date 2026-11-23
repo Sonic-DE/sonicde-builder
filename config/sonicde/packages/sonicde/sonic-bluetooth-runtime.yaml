@@ -40,6 +40,7 @@ depends:
     - sonicde/sonic-frameworks-notifications
     - sonicde/sonic-frameworks-progress-ui
     - sonicde/sonic-frameworks-runner
+    - sonicde/sonic-frameworks-settings-utils
     - sonicde/sonic-frameworks-svg
     - sonicde/sonic-frameworks-ui-components
     - sonicde/sonic-frameworks-widgets-addons

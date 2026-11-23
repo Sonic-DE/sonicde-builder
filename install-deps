@@ -5,11 +5,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Generate model
+# Its own model: state/model.json holds the last build's prefix, which ./install deploys.
+MODEL=state/deps-model.json
 python3 scripts/config.py -root . \
     -solution config/sonicde/solutions/sonicde.yaml \
-    -out state/model.json \
+    -out "$MODEL" \
     "$@"
 
 # Print platform packages for the current distro (FreeBSD: os-release ID, then freebsd)
-python3 scripts/install_deps.py state/model.json
+python3 scripts/install_deps.py "$MODEL"

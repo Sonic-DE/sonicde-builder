@@ -2,8 +2,11 @@
 import sys
 from pathlib import Path
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from validate import validate_cmake_package_alternatives, validate_cmake_packages, validate_commands, validate_headers, validate_python_modules, validate_system_packages
+from validate import (validate_cmake_package_alternatives, validate_cmake_packages, validate_commands, validate_files_any,
+                      validate_headers, validate_python_modules, validate_system_packages)
 
 
 def test_python_module_probe_accepts_importable_module(capsys):
@@ -100,3 +103,31 @@ def test_freebsd_base_system_packages_are_not_probed(monkeypatch):
     probed.clear()
     assert validate_system_packages({"platform": "linux", "packages": packages}) == 0
     assert probed == ["os-installed/icu", "os-installed/libpam"]
+
+
+def test_files_any_accepts_any_match_and_rejects_none(tmp_path, capsys):
+    (tmp_path / "share/docbook/4.5").mkdir(parents=True)
+    (tmp_path / "share/docbook/4.5/docbookx.dtd").write_text("<!-- fixture -->\n")
+    assert validate_files_any("fixture", [str(tmp_path / "missing.dtd"), str(tmp_path / "share/docbook/*/docbookx.dtd")]) == 0
+    assert validate_files_any("fixture", [str(tmp_path / "missing.dtd")]) == 1
+    output = capsys.readouterr()
+    assert "file: " in output.out
+    assert "missing all files" in output.err
+
+
+def test_system_package_with_nothing_to_check_fails(capsys):
+    model = {"packages": {"os-installed/unchecked": {"type": "system", "platform_packages": {"debian": "unchecked"}}}}
+    assert validate_system_packages(model) == 1
+    assert "has nothing to check" in capsys.readouterr().err
+
+
+def test_every_system_manifest_has_a_check():
+    # A manifest without one would pass validation whether or not the package is installed.
+    checks = ("pkg-config", "python-modules", "commands", "headers", "cmake-packages", "cmake-packages-any", "files-any")
+    root = Path(__file__).resolve().parents[1] / "config/sonicde/packages"
+    unchecked = []
+    for manifest in sorted(root.rglob("*.yaml")):
+        data = yaml.safe_load(manifest.read_text()) or {}
+        if data.get("type") == "system" and not any(data.get(check) for check in checks):
+            unchecked.append(str(manifest.relative_to(root)))
+    assert unchecked == []

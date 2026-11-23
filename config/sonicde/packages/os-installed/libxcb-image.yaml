@@ -1,0 +1,8 @@
+provides: sys/libxcb-image
+type: system
+pkg-config: xcb-image
+platform-packages:
+    debian: libxcb-image0-dev
+    devuan: libxcb-image0-dev
+    arch: xcb-util-image
+    freebsd: xcb-util-image

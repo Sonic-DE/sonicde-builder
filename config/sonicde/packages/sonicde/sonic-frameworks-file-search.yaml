@@ -28,6 +28,7 @@ build-depends:
     - sonicde/sonic-frameworks-cmake-modules
 
 depends:
+    - os-installed/lmdb
     - sonicde/sonic-frameworks-core-addons
     - sonicde/sonic-frameworks-crash-handler
     - sonicde/sonic-frameworks-dbus

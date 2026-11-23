@@ -1,0 +1,8 @@
+provides: sys/libxcb-renderutil
+type: system
+pkg-config: xcb-renderutil
+platform-packages:
+    debian: libxcb-render-util0-dev
+    devuan: libxcb-render-util0-dev
+    arch: xcb-util-renderutil
+    freebsd: xcb-util-renderutil

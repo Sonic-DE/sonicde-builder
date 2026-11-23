@@ -119,6 +119,9 @@ cmake -B build -S . -G Ninja
 # Build the selected packages
 cmake --build build --parallel 1 "${BUILD_ARGS[@]}"
 
+# Packages SonicDE builds must have come from the stage, not the system
+python3 scripts/check_staged_packages.py -model "$MODEL" -stage "$SCRIPT_DIR/state/install-stage"
+
 # set -e above is the deployment barrier: a failed configure/build never reaches
 # this phase. Do not move this into a per-package ExternalProject step.
 if [[ "$INSTALL" == true ]]; then

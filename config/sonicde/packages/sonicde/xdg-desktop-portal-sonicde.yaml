@@ -50,4 +50,21 @@ depends:
     - sonicde/sonic-frameworks-windowsystem
     - sonicde/sonic-frameworks-xml-gui
     - sonicde/sonic-workspace
+    - sys/libei
+    - sys/libeis
+    - sys/libpipewire-0.3
+    - sys/libxcb
+    - sys/libxcb-composite
+    - sys/libxcb-damage
+    - sys/libxcb-ewmh
+    - sys/libxcb-image
+    - sys/libxcb-randr
+    - sys/libxcb-render
+    - sys/libxcb-renderutil
+    - sys/libxcb-shm
+    - sys/libxcb-xfixes
+    - sys/libxcb-xinput
+    - sys/libxcb-xtest
+    - sys/libxkbcommon
+    - sys/libxkbcommon-x11
     - sys/linux-input-headers

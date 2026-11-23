@@ -30,5 +30,7 @@ build-depends:
 
 depends:
     - sonicde/sonic-frameworks-logging
+    - sonicde/sonic-frameworks-settings-utils
+    - sonicde/sonic-frameworks-unit-conversion
     - sonicde/sonic-terminal
     - sonicde/sonic-workspace

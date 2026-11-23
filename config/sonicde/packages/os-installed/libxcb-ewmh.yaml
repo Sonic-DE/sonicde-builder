@@ -1,0 +1,8 @@
+provides: sys/libxcb-ewmh
+type: system
+pkg-config: xcb-ewmh
+platform-packages:
+    debian: libxcb-ewmh-dev
+    devuan: libxcb-ewmh-dev
+    arch: xcb-util-wm
+    freebsd: xcb-util-wm

@@ -1,0 +1,8 @@
+provides: sys/libxkbcommon-x11
+type: system
+pkg-config: xkbcommon-x11
+platform-packages:
+    debian: libxkbcommon-x11-dev
+    devuan: libxkbcommon-x11-dev
+    arch: libxkbcommon-x11
+    freebsd: libxkbcommon

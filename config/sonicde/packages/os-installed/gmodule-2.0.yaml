@@ -1,0 +1,8 @@
+provides: sys/gmodule-2.0
+type: system
+pkg-config: gmodule-2.0
+platform-packages:
+    debian: libgio-2.0-dev
+    devuan: libgio-2.0-dev
+    arch: glib2
+    freebsd: glib

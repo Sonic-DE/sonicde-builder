@@ -1,0 +1,8 @@
+provides: sys/mobile-broadband-provider-info
+type: system
+pkg-config: mobile-broadband-provider-info
+platform-packages:
+    debian: mobile-broadband-provider-info
+    devuan: mobile-broadband-provider-info
+    arch: mobile-broadband-provider-info
+    freebsd: mobile-broadband-provider-info

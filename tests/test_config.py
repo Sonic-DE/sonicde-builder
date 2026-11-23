@@ -117,16 +117,13 @@ class TestRealSolutionPlatforms(unittest.TestCase):
         project.load()
         return project, project.build_closure()
 
-    def test_nothing_is_skipped_on_linux(self):
-        _, closure = self._closure("linux")
-        self.assertEqual(closure.skipped, {})
-
-    def test_packages_without_freebsd_are_left_out_on_freebsd(self):
-        project, closure = self._closure("freebsd")
+    def _check_left_out(self, platform):
+        """A package whose platforms leave this one out is left out with its edges, and nothing
+        else is skipped."""
+        project, closure = self._closure(platform)
         restricted = {name for name, package in project.packages.items()
-                      if package.platforms and "freebsd" not in package.platforms}
-        self.assertTrue(restricted)
-        # What the FreeBSD closure (or the build list) asks for directly.
+                      if package.platforms and platform not in package.platforms}
+        # What the closure (or the build list) asks for directly.
         wanted = set(project.solution.get("build") or [])
         for package in closure.packages.values():
             wanted |= {project.resolve_name(d) for d in package.depends + package.build_depends}
@@ -136,6 +133,16 @@ class TestRealSolutionPlatforms(unittest.TestCase):
                 self.assertFalse([e for e in closure.edges
                                   if name in (e.dependent, e.prerequisite)])
                 self.assertEqual(name in wanted, name in closure.skipped)
+        for name in closure.skipped:
+            with self.subTest(skipped=name):
+                self.assertIn(name, restricted)
+        return restricted
+
+    def test_packages_without_linux_are_left_out_on_linux(self):
+        self._check_left_out("linux")
+
+    def test_packages_without_freebsd_are_left_out_on_freebsd(self):
+        self.assertTrue(self._check_left_out("freebsd"))
 
 
 class TestConfigParsing(unittest.TestCase):

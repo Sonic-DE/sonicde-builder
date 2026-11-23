@@ -34,6 +34,7 @@ build-depends:
     - os-installed/libavformat
 
 depends:
+    - os-installed/tesseract
     - sonicde/sonic-frameworks-barcode
     - sonicde/sonic-frameworks-core-addons
     - sonicde/sonic-frameworks-crash-handler

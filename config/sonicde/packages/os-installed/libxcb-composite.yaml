@@ -1,0 +1,8 @@
+provides: sys/libxcb-composite
+type: system
+pkg-config: xcb-composite
+platform-packages:
+    debian: libxcb-composite0-dev
+    devuan: libxcb-composite0-dev
+    arch: libxcb
+    freebsd: libxcb

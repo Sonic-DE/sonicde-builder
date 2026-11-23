@@ -2,6 +2,7 @@ provides: sys/libclang
 type: system
 
 # Found through the solution's llvm-cmake-dir (build-all/build-repo set it on FreeBSD).
+files-any: ${llvm_cmake_dir}/clang/ClangConfig.cmake
 platform-packages:
     debian: libclang-dev
     devuan: libclang-dev

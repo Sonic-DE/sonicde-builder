@@ -30,6 +30,8 @@ build-depends:
 depends:
     - os-installed/libavcodec
     - os-installed/libavformat
+    # PDF metadata; optional in its CMake, so without this it's dropped silently.
+    - os-installed/poppler-qt6
     - sonicde/sonic-frameworks-archive
     - sonicde/sonic-frameworks-core-addons
     - sonicde/sonic-frameworks-internationalization

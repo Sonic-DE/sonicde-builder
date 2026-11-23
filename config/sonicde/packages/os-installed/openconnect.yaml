@@ -1,0 +1,8 @@
+provides: sys/openconnect
+type: system
+pkg-config: openconnect
+platform-packages:
+    debian: libopenconnect-dev
+    devuan: libopenconnect-dev
+    arch: openconnect
+    freebsd: openconnect

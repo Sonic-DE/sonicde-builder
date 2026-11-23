@@ -1,5 +1,7 @@
 provides: sys/libaspell
 type: system
+# aspell installs no pkg-config file.
+headers: aspell.h
 
 platform-packages:
     debian: libaspell-dev

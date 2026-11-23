@@ -54,7 +54,8 @@ def wrapper(tmp_path):
 def test_install_only_after_full_build(wrapper):
     result, calls = wrapper("--install", "--parallel", "3")
     assert result.returncode == 0, result.stderr
-    assert calls[-3] == ["cmake", "--build", "build", "--parallel", "1"]
+    assert calls[-4] == ["cmake", "--build", "build", "--parallel", "1"]
+    assert calls[-3][:4] == ["python3", "scripts/check_staged_packages.py", "-model", "state/model.json"]
     assert calls[-2] == ["sudo", "-v"]
     assert calls[-1][:3] == ["sudo", "--", "python3"]
     assert calls[-1][3].endswith("/scripts/install.py")
@@ -75,10 +76,16 @@ def test_failed_build_never_deploys(wrapper):
     assert not any(call[0] == "sudo" for call in calls)
 
 
+def test_packages_found_outside_the_stage_never_deploy(wrapper):
+    result, calls = wrapper("--install", fail_step="scripts/check_staged_packages.py")
+    assert result.returncode == 8
+    assert not any(call[0] == "sudo" for call in calls)
+
+
 def test_failed_authentication_never_installs(wrapper):
     result, calls = wrapper("--install", fail_auth=True)
     assert result.returncode == 9
-    assert calls[-2] == ["cmake", "--build", "build", "--parallel", "1"]
+    assert calls[-3] == ["cmake", "--build", "build", "--parallel", "1"]
     assert calls[-1] == ["sudo", "-v"]
     assert not any(any(arg.endswith("scripts/install.py") for arg in call) for call in calls)
 
@@ -86,7 +93,8 @@ def test_failed_authentication_never_installs(wrapper):
 def test_default_builds_staged_for_usr_without_deploying(wrapper):
     result, calls = wrapper("--verbose")
     assert result.returncode == 0
-    assert calls[-1] == ["cmake", "--build", "build", "--parallel", "1", "--verbose"]
+    assert calls[-2] == ["cmake", "--build", "build", "--parallel", "1", "--verbose"]
+    assert calls[-1][:2] == ["python3", "scripts/check_staged_packages.py"]
     assert not any(call[0] == "sudo" for call in calls)
     assert not any("scripts/install.py" in arg for call in calls for arg in call)
     assert "install-prefix=/usr" in calls[0]
