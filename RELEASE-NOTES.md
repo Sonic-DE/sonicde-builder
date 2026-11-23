@@ -58,7 +58,7 @@ first release.
   sonic-network-manager's hotspots, and `unix-selfauth-helper` for unlocking the screen; sonic-screenlocker
   installs the `kde` PAM service (`etc/pam.d/kde`) that uses it. At runtime on FreeBSD, sonic-workspace's
   image wallpapers need `qt6-imageformats` for WebP and TIFF pictures, and sonic-mobile-interface's screen
-  recorder needs `gstreamer1-plugins-vpx`, since FreeBSD's Qt uses GStreamer for video encoding.
+  recorder uses Qt Multimedia's FFmpeg backend (in `qt6-multimedia`) with `ffmpeg`'s VP9 or H.264 encoder.
 - **sonic-ecco is built without baloo-widgets** (`-DCMAKE_DISABLE_FIND_PACKAGE_KF6BalooWidgets=ON`) until SonicDE
   has its own fork, so it never picks up your distribution's KDE copy. Build it the same way; Ecco's file search
   and tagging integration is left out meanwhile.
