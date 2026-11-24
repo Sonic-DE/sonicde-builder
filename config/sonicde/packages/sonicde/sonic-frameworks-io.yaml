@@ -38,5 +38,6 @@ depends:
     - sonicde/sonic-frameworks-dbus
     - sonicde/sonic-frameworks-device-integration
     - sonicde/sonic-frameworks-icon-themes
+    - sonicde/sonic-frameworks-logging
     - sonicde/sonic-frameworks-progress-ui
     - sonicde/sonic-frameworks-windowsystem

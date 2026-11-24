@@ -76,6 +76,9 @@ first release.
   program, `docbook2markdown6`, which turns QDoc's DocBook output for SonicDE's libraries into Markdown pages
   for the API reference on sonicde.org; add it to your package's file list. It needs no new dependencies. Its `kf.doctools.core` logging category is
   gone (its programs log through Sonic Logging now), so drop any `QT_LOGGING_RULES` that name it.
+- **sonic-frameworks-io** now requires sonic-frameworks-logging; build it first. The password server's
+  `kf.kio.kpasswdserver` logging category is gone (it logs through Sonic Logging now), so drop any
+  `QT_LOGGING_RULES` that name it.
 - **sonic-win** now uses `KToolsArea::followDecoration()`, new in sonic-frameworks-color-scheme after 6.31.0.1:
   build it against the next sonic-frameworks-color-scheme release.
 - **sonic-mobile-interface** no longer needs sonic-pipewire (KPipeWire). It now needs sonic-frameworks-logging,
