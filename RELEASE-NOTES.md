@@ -2,6 +2,8 @@
   - SPDX-FileCopyrightText: None
   - SPDX-License-Identifier: CC0-1.0
 -->
+<!-- Every release has the same subsection headings. -->
+<!-- markdownlint-configure-file { "MD024": { "siblings_only": true } } -->
 
 # SonicDE Release Notes for Packagers
 
@@ -20,7 +22,7 @@ A few packages keep their own version numbers. Point releases such as 6.8.0.2 fi
 single packages between releases.
 
 | SonicDE release | Frameworks | System | Released |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | [Upcoming](#upcoming-release) | | | not yet released |
 | [6.8.2](#682-november-2026) | 6.31.0 (new packages only) | 26.08.3 | November 2026 |
 | [6.8.0](#680-october-2026) | 6.31.0 | 26.08.2 | October 2026 |
@@ -513,7 +515,7 @@ Every SonicDE package and the release it first shipped in. Packages with no rele
 yet ship in the upcoming release or aren't built on their own.
 
 | Package | First release | SonicDE release |
-|---|---|---|
+| --- | --- | --- |
 | sonic-accounts-integration | 26.08.0 | 6.7.5 |
 | sonic-activities | 6.6.4 | 6.6.4 |
 | sonic-activities-stats | 6.7.3 | 6.7.3 |
