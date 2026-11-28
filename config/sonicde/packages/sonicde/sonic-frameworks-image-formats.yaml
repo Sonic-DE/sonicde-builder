@@ -29,3 +29,4 @@ build-depends:
 
 depends:
     - sonicde/sonic-frameworks-archive
+    - sonicde/sonic-frameworks-logging
