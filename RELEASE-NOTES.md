@@ -168,6 +168,9 @@ first release.
   Drop `kcm_gamecontroller.categories`, `kcm_kded.categories`, `kcm_keyboard.categories`, `kcmkeys.categories`,
   `kcm_mouse.categories`, `kcm_tablet.categories` and `kcm_touchscreen.categories`
   (in `share/qlogging-categories6`) from your package's file list.
+- **sonic-frameworks-keyring no longer installs `kwallet.categories`** (in `share/qlogging-categories6`): it
+  logs through Sonic Logging now. Drop the file from your package's file list, and any `QT_LOGGING_RULES`
+  that name the `kf.wallet.*` categories.
 
 ## 6.8.2 (November 2026)
 
