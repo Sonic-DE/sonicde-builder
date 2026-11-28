@@ -29,5 +29,6 @@ build-depends:
 
 depends:
     - sonicde/sonic-crypto-library
+    - sonicde/sonic-frameworks-logging
     - sys/libgcrypt
     - sys/libsecret-1

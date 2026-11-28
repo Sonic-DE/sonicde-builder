@@ -81,6 +81,7 @@ first release.
 - **sonic-frameworks-io** now requires sonic-frameworks-logging; build it first. The password server's
   `kf.kio.kpasswdserver` logging category is gone (it logs through Sonic Logging now), so drop any
   `QT_LOGGING_RULES` that name it.
+- **sonic-frameworks-keyring** now requires sonic-frameworks-logging; build it first.
 - **sonic-win** now uses `KToolsArea::followDecoration()`, new in sonic-frameworks-color-scheme after 6.31.0.1:
   build it against the next sonic-frameworks-color-scheme release.
 - **sonic-mobile-interface** no longer needs sonic-pipewire (KPipeWire). It now needs sonic-frameworks-logging,
