@@ -1,0 +1,10 @@
+provides: sys/flexlexer
+type: system
+# The C++ scanner header of the installed flex; Debian ships it apart from flex.
+headers: FlexLexer.h
+
+platform-packages:
+    debian: libfl-dev
+    devuan: libfl-dev
+    arch: flex
+    freebsd: base

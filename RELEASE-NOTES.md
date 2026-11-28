@@ -123,6 +123,9 @@ first release.
   only) and share the connection through pf, in the anchor `sonic-network/*` (a system that runs
   pf with its own `/etc/pf.conf` needs `nat-anchor "sonic-network/*"` in it), or through
   sonic-firewall's ipfw rules when those are on.
+- **sonic-frameworks-holidays** builds its scanner with the `FlexLexer.h` of your installed flex instead of a
+  bundled copy, so it builds with newer flex releases. Debian and Devuan need `libfl-dev` for it (new
+  `os-installed/flexlexer`); Arch and FreeBSD ship the header with flex.
 
 ### Actions
 
