@@ -163,6 +163,10 @@ first release.
 - **License change: sonic-decoration now contains GPL code.** The new `libkdecorations3titlebarmenu` is
   GPL-2.0-or-later (parts GPL-2.0-only OR GPL-3.0-only, and the bundled D-Bus menu importer
   LGPL-2.0-or-later); `libkdecorations3` itself stays LGPL. Add the GPL licenses to the package's license field.
+- **sonic-desktop-interface no longer installs Qt logging category files**: it logs through Sonic Logging now.
+  Drop `kcm_gamecontroller.categories`, `kcm_kded.categories`, `kcm_keyboard.categories`, `kcmkeys.categories`,
+  `kcm_mouse.categories`, `kcm_tablet.categories` and `kcm_touchscreen.categories`
+  (in `share/qlogging-categories6`) from your package's file list.
 
 ## 6.8.2 (November 2026)
 
